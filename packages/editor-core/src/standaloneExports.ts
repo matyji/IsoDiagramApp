@@ -8,6 +8,5 @@ export type { IsoflowProps, InitialData } from 'src/types';
 export * from 'src/types/model';
 
 // Export i18n locales
-export { default as enUS } from 'src/i18n/en-US';
-export { default as zhCN } from 'src/i18n/zh-CN';
+export { default as frFR } from 'src/i18n/fr-FR';
 export { default as allLocales } from 'src/i18n';

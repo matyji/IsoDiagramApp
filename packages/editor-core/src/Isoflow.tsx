@@ -13,7 +13,7 @@ import { UiOverlay } from 'src/components/UiOverlay/UiOverlay';
 import { UiStateProvider, useUiStateStore } from 'src/stores/uiStateStore';
 import { INITIAL_DATA, MAIN_MENU_OPTIONS } from 'src/config';
 import { useInitialDataManager } from 'src/hooks/useInitialDataManager';
-import enUS from 'src/i18n/en-US';
+import frFR from 'src/i18n/fr-FR';
 
 const App = (props: IsoflowProps) => {
   const {
@@ -25,7 +25,7 @@ const App = (props: IsoflowProps) => {
     enableDebugTools = false,
     editorMode = 'EDITABLE',
     renderer,
-    locale = enUS,
+    locale = frFR,
     iconPackManager,
   } = props;
   const uiStateActions = useUiStateStore((state) => {
@@ -114,7 +114,7 @@ const App = (props: IsoflowProps) => {
 export const Isoflow = (props: IsoflowProps) => {
   return (
     <ThemeProvider theme={theme}>
-      <LocaleProvider locale={props.locale || enUS}>
+      <LocaleProvider locale={props.locale || frFR}>
         <ModelProvider>
           <SceneProvider>
             <UiStateProvider>

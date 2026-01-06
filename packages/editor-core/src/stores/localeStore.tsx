@@ -1,8 +1,8 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { LocaleProps } from '../types/isoflowProps';
-import enUS from '../i18n/en-US';
+import frFR from '../i18n/fr-FR';
 
-const LocaleContext = createContext<LocaleProps>(enUS);
+const LocaleContext = createContext<LocaleProps>(frFR);
 
 interface LocaleProviderProps {
   locale: LocaleProps;
@@ -28,8 +28,8 @@ export const useLocale = (): LocaleProps => {
 // Generic type helper for nested object access
 type NestedKeyOf<ObjectType extends object> = {
   [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
-    ? `${Key}.${NestedKeyOf<ObjectType[Key]>}`
-    : `${Key}`;
+  ? `${Key}.${NestedKeyOf<ObjectType[Key]>}`
+  : `${Key}`;
 }[keyof ObjectType & (string | number)];
 
 // Overloaded useTranslation function
@@ -41,11 +41,11 @@ export function useTranslation<K extends keyof LocaleProps>(
   namespace: K
 ): {
   t: (key: keyof LocaleProps[K]) => string;
-  };
+};
 
 export function useTranslation<K extends keyof LocaleProps>(namespace?: K) {
   const locale = useLocale();
-  
+
   if (namespace) {
     // Return scoped translation function for specific namespace
     const namespaceData = locale[namespace];
@@ -59,7 +59,7 @@ export function useTranslation<K extends keyof LocaleProps>(namespace?: K) {
     const t = (key: NestedKeyOf<LocaleProps>): string => {
       const parts = key.split('.');
       let current: any = locale;
-      
+
       for (const part of parts) {
         if (current && typeof current === 'object' && part in current) {
           current = current[part];
@@ -67,7 +67,7 @@ export function useTranslation<K extends keyof LocaleProps>(namespace?: K) {
           return key; // Return key if path not found
         }
       }
-      
+
       return typeof current === 'string' ? current : key;
     };
     return { t };
