@@ -76,19 +76,6 @@ const EditorPage: React.FC = () => {
 
   return (
     <div className="App">
-      <Toolbar
-        isReadonlyUrl={isReadonlyUrl}
-        serverStorageAvailable={diagram.serverStorageAvailable}
-        diagramName={diagram.diagramName}
-        currentDiagram={diagram.currentDiagram}
-        hasUnsavedChanges={diagram.hasUnsavedChanges}
-        onNewDiagram={diagram.newDiagram}
-        onSaveDialog={() => setShowSaveDialog(true)}
-        onLoadDialog={() => setShowLoadDialog(true)}
-        onExportDialog={() => setShowExportDialog(true)}
-        onDiagramManager={() => setShowDiagramManager(true)}
-        onQuickSave={diagram.saveDiagram}
-      />
 
       <div className="fossflow-container">
         <Isoflow
@@ -97,6 +84,14 @@ const EditorPage: React.FC = () => {
           onModelUpdated={diagram.handleModelUpdated}
           editorMode={isReadonlyUrl ? 'EXPLORABLE_READONLY' : 'EDITABLE'}
           locale={allLocales['fr-FR']}
+          onNew={diagram.newDiagram}
+          onSave={() => setShowSaveDialog(true)}
+          onQuickSave={diagram.saveDiagram}
+          onLoad={() => setShowLoadDialog(true)}
+          onExport={() => setShowExportDialog(true)}
+          onServerStorage={() => setShowDiagramManager(true)}
+          isModified={diagram.hasUnsavedChanges}
+          diagramName={diagram.diagramName}
           iconPackManager={{
             lazyLoadingEnabled: iconPackManager.lazyLoadingEnabled,
             onToggleLazyLoading: iconPackManager.toggleLazyLoading,

@@ -185,6 +185,17 @@ export interface UiState {
   connectorInteractionMode: ConnectorInteractionMode;
   expandLabels: boolean;
   iconPackManager: IconPackManagerProps | null;
+  appActions: {
+    onNew?: () => void;
+    onSave?: () => void;
+    onQuickSave?: () => void;
+    onLoad?: () => void;
+    onExport?: () => void;
+    onSettings?: () => void;
+    onServerStorage?: () => void;
+    isModified?: boolean;
+    diagramName?: string;
+  } | null;
 
 }
 
@@ -213,6 +224,7 @@ export interface UiStateActions {
   setConnectorInteractionMode: (mode: ConnectorInteractionMode) => void;
   setExpandLabels: (expand: boolean) => void;
   setIconPackManager: (iconPackManager: IconPackManagerProps | null) => void;
+  setAppActions: (appActions: any) => void;
 
 }
 

@@ -25,13 +25,14 @@ export const ZoomControls = () => {
 
   return (
     <Stack direction="row" spacing={1} alignItems="center">
-      <UiElement>
+      <UiElement sx={{ p: 0 }}>
         <Stack direction="row">
           <IconButton
             name="Zoom out"
             Icon={<ZoomOutIcon />}
             onClick={uiStateStoreActions.decrementZoom}
             disabled={zoom >= MAX_ZOOM}
+            size="small"
           />
           <Divider orientation="vertical" flexItem />
           <Box
@@ -39,7 +40,8 @@ export const ZoomControls = () => {
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              minWidth: toPx(60)
+              minWidth: toPx(45),
+              height: 40
             }}
           >
             <Typography variant="body2" color="text.secondary">
@@ -52,23 +54,26 @@ export const ZoomControls = () => {
             Icon={<ZoomInIcon />}
             onClick={uiStateStoreActions.incrementZoom}
             disabled={zoom <= MIN_ZOOM}
+            size="small"
           />
         </Stack>
       </UiElement>
-      <UiElement>
+      <UiElement sx={{ p: 0 }}>
         <IconButton
           name="Fit to screen"
           Icon={<FitToScreenIcon />}
           onClick={fitToView}
+          size="small"
         />
       </UiElement>
-      <UiElement>
+      <UiElement sx={{ p: 0 }}>
         <IconButton
           name="Help (F1)"
           Icon={<HelpIcon />}
           onClick={() => {
             return uiStateStoreActions.setDialog(DialogTypeEnum.HELP);
           }}
+          size="small"
         />
       </UiElement>
     </Stack>

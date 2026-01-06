@@ -158,12 +158,13 @@ export const MainMenu = () => {
   }
 
   return (
-    <UiElement>
+    <UiElement sx={{ p: 0 }}>
       <IconButton
         Icon={<MenuIcon />}
         name="Main menu"
         onClick={onToggleMenu}
         isActive={isMainMenuOpen}
+        size="small"
       />
 
       <Menu

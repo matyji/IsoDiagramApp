@@ -9,6 +9,7 @@ interface Props {
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   tooltipPosition?: TooltipProps['placement'];
   disabled?: boolean;
+  size?: 'small' | 'medium';
 }
 
 export const IconButton = ({
@@ -17,19 +18,20 @@ export const IconButton = ({
   onClick,
   isActive = false,
   disabled = false,
-  tooltipPosition = 'bottom'
+  tooltipPosition = 'bottom',
+  size = 'medium'
 }: Props) => {
   const theme = useTheme();
   const iconColor = useMemo(() => {
     if (isActive) {
-      return 'grey.200';
+      return 'white';
     }
 
     if (disabled) {
-      return 'grey.800';
+      return 'grey.400';
     }
 
-    return 'grey.500';
+    return 'grey.600';
   }, [disabled, isActive]);
 
   return (
@@ -39,20 +41,24 @@ export const IconButton = ({
       enterDelay={1000}
       enterNextDelay={1000}
       arrow
-      sx={{ bgcolor: 'primary.main' }}
     >
       <Button
         variant="text"
         onClick={onClick}
+        disabled={disabled}
         sx={{
-          borderRadius: 0,
-          height: theme.customVars.toolMenu.height,
-          width: theme.customVars.toolMenu.height,
+          borderRadius: 2,
+          height: size === 'small' ? 40 : 48,
+          width: size === 'small' ? 40 : 48,
           maxWidth: '100%',
           minWidth: 'auto',
-          bgcolor: isActive ? 'primary.light' : undefined,
+          bgcolor: isActive ? '#2563eb' : 'transparent',
+          '&:hover': {
+            bgcolor: isActive ? '#1d4ed8' : 'grey.100'
+          },
           p: 0,
-          m: 0
+          m: size === 'small' ? 0.25 : 0.5,
+          transition: 'all 0.2s ease-in-out'
         }}
       >
         <Box
@@ -61,7 +67,8 @@ export const IconButton = ({
             justifyContent: 'center',
             alignItems: 'center',
             svg: {
-              color: iconColor
+              color: iconColor,
+              fontSize: size === 'small' ? 20 : 22
             }
           }}
         >

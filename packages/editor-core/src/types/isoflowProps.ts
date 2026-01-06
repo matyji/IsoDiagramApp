@@ -220,4 +220,13 @@ export interface IsoflowProps {
   renderer?: RendererProps;
   locale?: LocaleProps;
   iconPackManager?: IconPackManagerProps;
+  onNew?: () => void;
+  onSave?: () => void;
+  onQuickSave?: () => void;
+  onLoad?: () => void;
+  onExport?: () => void;
+  onSettings?: () => void;
+  onServerStorage?: () => void;
+  isModified?: boolean;
+  diagramName?: string;
 }

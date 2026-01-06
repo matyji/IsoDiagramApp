@@ -15,18 +15,19 @@ import { INITIAL_DATA, MAIN_MENU_OPTIONS } from 'src/config';
 import { useInitialDataManager } from 'src/hooks/useInitialDataManager';
 import enUS from 'src/i18n/en-US';
 
-const App = ({
-  initialData,
-  mainMenuOptions = MAIN_MENU_OPTIONS,
-  width = '100%',
-  height = '100%',
-  onModelUpdated,
-  enableDebugTools = false,
-  editorMode = 'EDITABLE',
-  renderer,
-  locale = enUS,
-  iconPackManager,
-}: IsoflowProps) => {
+const App = (props: IsoflowProps) => {
+  const {
+    initialData,
+    mainMenuOptions = MAIN_MENU_OPTIONS,
+    width = '100%',
+    height = '100%',
+    onModelUpdated,
+    enableDebugTools = false,
+    editorMode = 'EDITABLE',
+    renderer,
+    locale = enUS,
+    iconPackManager,
+  } = props;
   const uiStateActions = useUiStateStore((state) => {
     return state.actions;
   });
@@ -71,6 +72,23 @@ const App = ({
   useEffect(() => {
     uiStateActions.setIconPackManager(iconPackManager || null);
   }, [iconPackManager, uiStateActions]);
+
+  // Handle app actions
+  const appActions = React.useMemo(() => ({
+    onNew: props.onNew,
+    onSave: props.onSave,
+    onQuickSave: props.onQuickSave,
+    onLoad: props.onLoad,
+    onExport: props.onExport,
+    onSettings: props.onSettings,
+    onServerStorage: props.onServerStorage,
+    isModified: props.isModified,
+    diagramName: props.diagramName
+  }), [props.onNew, props.onSave, props.onQuickSave, props.onLoad, props.onExport, props.onSettings, props.onServerStorage, props.isModified, props.diagramName]);
+
+  useEffect(() => {
+    uiStateActions.setAppActions(appActions);
+  }, [appActions, uiStateActions]);
 
   if (!initialDataManager.isReady) return null;
 
