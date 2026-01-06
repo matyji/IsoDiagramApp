@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 
 interface Props {
   icons: IconI[];
+  selectedIconId?: string;
   onMouseDown?: (icon: IconI) => void;
   onClick?: (icon: IconI) => void;
   onDoubleClick?: (icon: IconI) => void;
@@ -12,34 +13,25 @@ interface Props {
   onHover?: (index: number) => void;
 }
 
-export const IconGrid = ({ icons, onMouseDown, onClick, onDoubleClick, hoveredIndex, onHover }: Props) => {
+export const IconGrid = ({ icons, selectedIconId, onMouseDown, onClick, onDoubleClick, hoveredIndex, onHover }: Props) => {
   return (
-    <Grid container>
+    <Grid container spacing={1} sx={{ px: 1 }}>
       {icons.map((icon, index) => {
-        const isHovered = hoveredIndex === index;
         return (
-          <Grid item xs={3} key={icon.id}>
-            <Box
-              sx={{
-                backgroundColor: isHovered ? 'action.hover' : 'transparent',
-                borderRadius: 1,
-                transition: 'background-color 0.2s'
+          <Grid item xs={3} key={icon.id} sx={{ display: 'flex', justifyContent: 'center' }} onMouseEnter={() => onHover?.(index)}>
+            <Icon
+              icon={icon}
+              isSelected={selectedIconId === icon.id}
+              onClick={() => {
+                onClick?.(icon);
               }}
-              onMouseEnter={() => onHover?.(index)}
-            >
-              <Icon
-                icon={icon}
-                onClick={() => {
-                  onClick?.(icon);
-                }}
-                onMouseDown={() => {
-                  onMouseDown?.(icon);
-                }}
-                onDoubleClick={() => {
-                  onDoubleClick?.(icon);
-                }}
-              />
-            </Box>
+              onMouseDown={() => {
+                onMouseDown?.(icon);
+              }}
+              onDoubleClick={() => {
+                onDoubleClick?.(icon);
+              }}
+            />
           </Grid>
         );
       })}

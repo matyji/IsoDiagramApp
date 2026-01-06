@@ -5,11 +5,12 @@ import { IconCollection } from './IconCollection';
 
 interface Props {
   iconCategories: IconCollectionStateWithIcons[];
+  selectedIconId?: string;
   onClick?: (icon: Icon) => void;
   onMouseDown?: (icon: Icon) => void;
 }
 
-export const Icons = ({ iconCategories, onClick, onMouseDown }: Props) => {
+export const Icons = ({ iconCategories, selectedIconId, onClick, onMouseDown }: Props) => {
   return (
     <Grid container spacing={1} sx={{ py: 2 }}>
       {iconCategories.map((cat) => {
@@ -21,6 +22,7 @@ export const Icons = ({ iconCategories, onClick, onMouseDown }: Props) => {
           >
             <IconCollection
               {...cat}
+              selectedIconId={selectedIconId}
               onClick={onClick}
               onMouseDown={onMouseDown}
             />

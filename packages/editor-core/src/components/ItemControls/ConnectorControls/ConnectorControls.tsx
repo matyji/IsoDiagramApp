@@ -16,7 +16,8 @@ import {
   Switch,
   Typography,
   Button,
-  Paper
+  Paper,
+  Stack
 } from '@mui/material';
 import { useConnector } from 'src/hooks/useConnector';
 import { ColorSelector } from 'src/components/ColorSelector/ColorSelector';
@@ -127,7 +128,13 @@ export const ConnectorControls = ({ id }: Props) => {
   return (
     <ControlsContainer>
       <Box
-        sx={{ position: 'relative', paddingTop: '24px', paddingBottom: '24px' }}
+        sx={{
+          bgcolor: 'white',
+          position: 'relative',
+          pt: 3,
+          pb: 1,
+          borderBottom: '1px solid #f1f5f9'
+        }}
       >
         {/* Close button */}
         <MUIIconButton
@@ -137,288 +144,306 @@ export const ConnectorControls = ({ id }: Props) => {
           }}
           sx={{
             position: 'absolute',
-            top: 16,
-            right: 16,
-            zIndex: 2
+            top: 12,
+            right: 12,
+            zIndex: 2,
+            color: '#cbd5e1',
+            '&:hover': {
+              color: '#94a3b8'
+            }
           }}
           size="small"
         >
-          <CloseIcon />
+          <CloseIcon sx={{ fontSize: 20 }} />
         </MUIIconButton>
-        <Section title="Labels">
-          <Box sx={{ mb: 2 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 2
-              }}
+
+        <Stack alignItems="center" spacing={1}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#94a3b8',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em'
+            }}
+          >
+            Connector
+          </Typography>
+        </Stack>
+      </Box>
+      <Section title="Labels">
+        <Box sx={{ mb: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 2
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {labels.length} / 256 labels
+            </Typography>
+            <Button
+              startIcon={<AddIcon />}
+              onClick={handleAddLabel}
+              disabled={labels.length >= 256}
+              size="small"
+              variant="outlined"
             >
-              <Typography variant="body2" color="text.secondary">
-                {labels.length} / 256 labels
-              </Typography>
-              <Button
-                startIcon={<AddIcon />}
-                onClick={handleAddLabel}
-                disabled={labels.length >= 256}
-                size="small"
-                variant="outlined"
-              >
-                Add Label
-              </Button>
-            </Box>
+              Add Label
+            </Button>
+          </Box>
 
-            {labels.length === 0 && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ textAlign: 'center', py: 2 }}
-              >
-                No labels. Click &quot;Add Label&quot; to create one.
-              </Typography>
-            )}
+          {labels.length === 0 && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ textAlign: 'center', py: 2 }}
+            >
+              No labels. Click &quot;Add Label&quot; to create one.
+            </Typography>
+          )}
 
-            {labels.map((label, index) => {
-              return (
-                <Paper key={label.id} variant="outlined" sx={{ p: 2, mb: 2 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      mb: 1
+          {labels.map((label, index) => {
+            return (
+              <Paper key={label.id} variant="outlined" sx={{ p: 2, mb: 2 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 1
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    Label {index + 1}
+                  </Typography>
+                  <MUIIconButton
+                    size="small"
+                    onClick={() => {
+                      return handleDeleteLabel(label.id);
                     }}
+                    color="error"
                   >
-                    <Typography variant="caption" color="text.secondary">
-                      Label {index + 1}
-                    </Typography>
-                    <MUIIconButton
-                      size="small"
-                      onClick={() => {
-                        return handleDeleteLabel(label.id);
-                      }}
-                      color="error"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </MUIIconButton>
-                  </Box>
+                    <DeleteIcon fontSize="small" />
+                  </MUIIconButton>
+                </Box>
 
+                <TextField
+                  label="Text"
+                  value={label.text}
+                  onChange={(e) => {
+                    return handleUpdateLabel(label.id, {
+                      text: e.target.value
+                    });
+                  }}
+                  fullWidth
+                  sx={{ mb: 2 }}
+                />
+
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                   <TextField
-                    label="Text"
-                    value={label.text}
+                    label="Position (%)"
+                    type="number"
+                    value={label.position}
                     onChange={(e) => {
-                      return handleUpdateLabel(label.id, {
-                        text: e.target.value
-                      });
+                      const inputValue = e.target.value;
+
+                      // Allow empty input
+                      if (inputValue === '') {
+                        handleUpdateLabel(label.id, { position: 0 });
+                        return;
+                      }
+
+                      const value = parseInt(inputValue, 10);
+                      if (!Number.isNaN(value)) {
+                        handleUpdateLabel(label.id, {
+                          position: Math.max(0, Math.min(100, value))
+                        });
+                      }
                     }}
-                    fullWidth
-                    sx={{ mb: 2 }}
+                    onBlur={(e) => {
+                      // On blur, ensure we have a valid value
+                      if (e.target.value === '') {
+                        handleUpdateLabel(label.id, { position: 0 });
+                      }
+                    }}
+                    inputProps={{ min: 0, max: 100 }}
+                    sx={{ flex: 1 }}
                   />
 
-                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                    <TextField
-                      label="Position (%)"
-                      type="number"
-                      value={label.position}
+                  {isDoubleLineType && (
+                    <Select
+                      value={label.line || '1'}
                       onChange={(e) => {
-                        const inputValue = e.target.value;
-
-                        // Allow empty input
-                        if (inputValue === '') {
-                          handleUpdateLabel(label.id, { position: 0 });
-                          return;
-                        }
-
-                        const value = parseInt(inputValue, 10);
-                        if (!Number.isNaN(value)) {
-                          handleUpdateLabel(label.id, {
-                            position: Math.max(0, Math.min(100, value))
-                          });
-                        }
-                      }}
-                      onBlur={(e) => {
-                        // On blur, ensure we have a valid value
-                        if (e.target.value === '') {
-                          handleUpdateLabel(label.id, { position: 0 });
-                        }
-                      }}
-                      inputProps={{ min: 0, max: 100 }}
-                      sx={{ flex: 1 }}
-                    />
-
-                    {isDoubleLineType && (
-                      <Select
-                        value={label.line || '1'}
-                        onChange={(e) => {
-                          return handleUpdateLabel(label.id, {
-                            line: e.target.value as '1' | '2'
-                          });
-                        }}
-                        sx={{ flex: 1 }}
-                      >
-                        <MenuItem value="1">Line 1</MenuItem>
-                        <MenuItem value="2">Line 2</MenuItem>
-                      </Select>
-                    )}
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Height Offset
-                    </Typography>
-                    <Slider
-                      marks
-                      step={10}
-                      min={-100}
-                      max={100}
-                      value={label.height || 0}
-                      onChange={(e, value) => {
                         return handleUpdateLabel(label.id, {
-                          height: value as number
+                          line: e.target.value as '1' | '2'
                         });
                       }}
-                    />
-                  </Box>
+                      sx={{ flex: 1 }}
+                    >
+                      <MenuItem value="1">Line 1</MenuItem>
+                      <MenuItem value="2">Line 2</MenuItem>
+                    </Select>
+                  )}
+                </Box>
 
-                  <Box>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={label.showLine !== false}
-                          onChange={(e) => {
-                            return handleUpdateLabel(label.id, {
-                              showLine: e.target.checked
-                            });
-                          }}
-                        />
-                      }
-                      label="Show Dotted Line"
-                    />
-                  </Box>
-                </Paper>
-              );
-            })}
-          </Box>
-        </Section>
-        <Section title="Color">
-          <FormControlLabel
-            control={
-              <Switch
-                checked={useCustomColor}
-                onChange={(e) => {
-                  setUseCustomColor(e.target.checked);
-                  if (!e.target.checked) {
-                    updateConnector(connector.id, { customColor: '' });
-                  }
-                }}
-              />
-            }
-            label="Use Custom Color"
-            sx={{ mb: 2 }}
-          />
-          {useCustomColor ? (
-            <CustomColorInput
-              value={connector.customColor || '#000000'}
-              onChange={(color) => {
-                updateConnector(connector.id, { customColor: color });
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Height Offset
+                  </Typography>
+                  <Slider
+                    marks
+                    step={10}
+                    min={-100}
+                    max={100}
+                    value={label.height || 0}
+                    onChange={(e, value) => {
+                      return handleUpdateLabel(label.id, {
+                        height: value as number
+                      });
+                    }}
+                  />
+                </Box>
+
+                <Box>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={label.showLine !== false}
+                        onChange={(e) => {
+                          return handleUpdateLabel(label.id, {
+                            showLine: e.target.checked
+                          });
+                        }}
+                      />
+                    }
+                    label="Show Dotted Line"
+                  />
+                </Box>
+              </Paper>
+            );
+          })}
+        </Box>
+      </Section>
+      <Section title="Color">
+        <FormControlLabel
+          control={
+            <Switch
+              checked={useCustomColor}
+              onChange={(e) => {
+                setUseCustomColor(e.target.checked);
+                if (!e.target.checked) {
+                  updateConnector(connector.id, { customColor: '' });
+                }
               }}
             />
-          ) : (
-            <ColorSelector
-              onChange={(color) => {
-                return updateConnector(connector.id, {
-                  color,
-                  customColor: ''
+          }
+          label="Use Custom Color"
+          sx={{ mb: 2 }}
+        />
+        {useCustomColor ? (
+          <CustomColorInput
+            value={connector.customColor || '#000000'}
+            onChange={(color) => {
+              updateConnector(connector.id, { customColor: color });
+            }}
+          />
+        ) : (
+          <ColorSelector
+            onChange={(color) => {
+              return updateConnector(connector.id, {
+                color,
+                customColor: ''
+              });
+            }}
+            activeColor={connector.color}
+          />
+        )}
+      </Section>
+      <Section title="Width">
+        <Slider
+          marks
+          step={10}
+          min={10}
+          max={30}
+          value={connector.width}
+          onChange={(e, newWidth) => {
+            updateConnector(connector.id, { width: newWidth as number });
+          }}
+        />
+      </Section>
+      <Section title="Line Style">
+        <Select
+          value={connector.style || 'SOLID'}
+          onChange={(e) => {
+            updateConnector(connector.id, {
+              style: e.target.value as Connector['style']
+            });
+          }}
+          fullWidth
+          sx={{ mb: 2 }}
+        >
+          {Object.values(connectorStyleOptions).map((style) => {
+            return (
+              <MenuItem key={style} value={style}>
+                {style}
+              </MenuItem>
+            );
+          })}
+        </Select>
+      </Section>
+      <Section title="Line Type">
+        <Select
+          value={connector.lineType || 'SINGLE'}
+          onChange={(e) => {
+            updateConnector(connector.id, {
+              lineType: e.target.value as Connector['lineType']
+            });
+          }}
+          fullWidth
+        >
+          {Object.values(connectorLineTypeOptions).map((type) => {
+            let displayName = 'Double Line with Circle';
+            if (type === 'SINGLE') {
+              displayName = 'Single Line';
+            } else if (type === 'DOUBLE') {
+              displayName = 'Double Line';
+            }
+            return (
+              <MenuItem key={type} value={type}>
+                {displayName}
+              </MenuItem>
+            );
+          })}
+        </Select>
+      </Section>
+      <Section>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={connector.showArrow !== false}
+              onChange={(e) => {
+                updateConnector(connector.id, {
+                  showArrow: e.target.checked
                 });
               }}
-              activeColor={connector.color}
             />
-          )}
-        </Section>
-        <Section title="Width">
-          <Slider
-            marks
-            step={10}
-            min={10}
-            max={30}
-            value={connector.width}
-            onChange={(e, newWidth) => {
-              updateConnector(connector.id, { width: newWidth as number });
+          }
+          label="Show Arrow"
+        />
+      </Section>
+      <Section sx={{ pb: 4 }}>
+        <Box>
+          <DeleteButton
+            onClick={() => {
+              uiStateActions.setItemControls(null);
+              deleteConnector(connector.id);
             }}
           />
-        </Section>
-        <Section title="Line Style">
-          <Select
-            value={connector.style || 'SOLID'}
-            onChange={(e) => {
-              updateConnector(connector.id, {
-                style: e.target.value as Connector['style']
-              });
-            }}
-            fullWidth
-            sx={{ mb: 2 }}
-          >
-            {Object.values(connectorStyleOptions).map((style) => {
-              return (
-                <MenuItem key={style} value={style}>
-                  {style}
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </Section>
-        <Section title="Line Type">
-          <Select
-            value={connector.lineType || 'SINGLE'}
-            onChange={(e) => {
-              updateConnector(connector.id, {
-                lineType: e.target.value as Connector['lineType']
-              });
-            }}
-            fullWidth
-          >
-            {Object.values(connectorLineTypeOptions).map((type) => {
-              let displayName = 'Double Line with Circle';
-              if (type === 'SINGLE') {
-                displayName = 'Single Line';
-              } else if (type === 'DOUBLE') {
-                displayName = 'Double Line';
-              }
-              return (
-                <MenuItem key={type} value={type}>
-                  {displayName}
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </Section>
-        <Section>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={connector.showArrow !== false}
-                onChange={(e) => {
-                  updateConnector(connector.id, {
-                    showArrow: e.target.checked
-                  });
-                }}
-              />
-            }
-            label="Show Arrow"
-          />
-        </Section>
-        <Section>
-          <Box>
-            <DeleteButton
-              onClick={() => {
-                uiStateActions.setItemControls(null);
-                deleteConnector(connector.id);
-              }}
-            />
-          </Box>
-        </Section>
-      </Box>
+        </Box>
+      </Section>
     </ControlsContainer>
   );
 };

@@ -10,16 +10,18 @@ interface Props {
 
 export const Header = ({ title }: Props) => {
   return (
-    <Section sx={{ py: 3 }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-            <Typography variant="body2" color="text.secondary">
-              {title}
-            </Typography>
-          </Box>
-        </Grid>
-      </Grid>
+    <Section sx={{ py: 2, borderBottom: '1px solid #f1f5f9' }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: '#64748b',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }}
+      >
+        {title}
+      </Typography>
     </Section>
   );
 };

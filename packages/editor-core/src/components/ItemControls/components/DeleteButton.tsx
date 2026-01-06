@@ -9,13 +9,26 @@ interface Props {
 export const DeleteButton = ({ onClick }: Props) => {
   return (
     <Button
-      color="error"
-      size="small"
-      variant="outlined"
-      startIcon={<DeleteIcon color="error" />}
+      fullWidth
+      sx={{
+        bgcolor: '#fff1f2',
+        color: '#e11d48',
+        borderRadius: 2,
+        py: 1.5,
+        fontWeight: 700,
+        fontSize: '0.75rem',
+        letterSpacing: '0.05em',
+        textTransform: 'uppercase',
+        '&:hover': {
+          bgcolor: '#ffe4e6'
+        },
+        boxShadow: 'none',
+        border: 'none'
+      }}
+      startIcon={<DeleteIcon sx={{ fontSize: '18px !important' }} />}
       onClick={onClick}
     >
-      Delete
+      Delete Element
     </Button>
   );
 };

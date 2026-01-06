@@ -11,6 +11,7 @@ import { IconGrid } from './IconGrid';
 interface Props {
   id?: string;
   icons: IconI[];
+  selectedIconId?: string;
   onClick?: (icon: IconI) => void;
   onMouseDown?: (icon: IconI) => void;
   isExpanded: boolean;
@@ -19,6 +20,7 @@ interface Props {
 export const IconCollection = ({
   id,
   icons,
+  selectedIconId,
   onClick,
   onMouseDown,
   isExpanded: _isExpanded
@@ -33,6 +35,12 @@ export const IconCollection = ({
         onClick={() => {
           return setIsExpanded(!isExpanded);
         }}
+        sx={{
+          py: 1,
+          px: 1,
+          justifyContent: 'flex-start',
+          '&:hover': { bgcolor: '#f8fafc' }
+        }}
       >
         <Stack
           sx={{ width: '100%' }}
@@ -42,24 +50,32 @@ export const IconCollection = ({
           alignItems="center"
         >
           <Typography
-            variant="body2"
-            color="text.secondary"
-            textTransform="uppercase"
-            fontWeight={600}
+            variant="caption"
+            sx={{
+              color: '#64748b',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}
           >
-            {id}
+            {id || 'Icons'}
           </Typography>
           {isExpanded ? (
-            <ChevronUpIcon color="action" />
+            <ChevronUpIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
           ) : (
-            <ChevronDownIcon color="action" />
+            <ChevronDownIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
           )}
         </Stack>
       </Button>
-      <Divider />
+      <Divider sx={{ mb: 1.5, opacity: 0.5 }} />
 
       {isExpanded && (
-        <IconGrid icons={icons} onMouseDown={onMouseDown} onClick={onClick} />
+        <IconGrid
+          icons={icons}
+          selectedIconId={selectedIconId}
+          onMouseDown={onMouseDown}
+          onClick={onClick}
+        />
       )}
     </Section>
   );

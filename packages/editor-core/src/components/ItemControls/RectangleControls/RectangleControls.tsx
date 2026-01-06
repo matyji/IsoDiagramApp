@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, IconButton as MUIIconButton, FormControlLabel, Switch, Typography } from '@mui/material';
+import { Box, IconButton as MUIIconButton, FormControlLabel, Switch, Typography, Stack } from '@mui/material';
 import { useRectangle } from 'src/hooks/useRectangle';
 import { ColorSelector } from 'src/components/ColorSelector/ColorSelector';
 import { ColorPicker } from 'src/components/ColorSelector/ColorPicker';
@@ -30,7 +30,15 @@ export const RectangleControls = ({ id }: Props) => {
 
   return (
     <ControlsContainer>
-      <Box sx={{ position: 'relative' }}>
+      <Box
+        sx={{
+          bgcolor: 'white',
+          position: 'relative',
+          pt: 3,
+          pb: 1,
+          borderBottom: '1px solid #f1f5f9'
+        }}
+      >
         {/* Close button */}
         <MUIIconButton
           aria-label="Close"
@@ -39,57 +47,76 @@ export const RectangleControls = ({ id }: Props) => {
           }}
           sx={{
             position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 2
+            top: 12,
+            right: 12,
+            zIndex: 2,
+            color: '#cbd5e1',
+            '&:hover': {
+              color: '#94a3b8'
+            }
           }}
           size="small"
         >
-          <CloseIcon />
+          <CloseIcon sx={{ fontSize: 20 }} />
         </MUIIconButton>
-        <Section title="Color">
-          <FormControlLabel
-            control={
-              <Switch
-                checked={useCustomColor}
-                onChange={(e) => {
-                  setUseCustomColor(e.target.checked);
-                  if (!e.target.checked) {
-                    updateRectangle(rectangle.id, { customColor: '' });
-                  }
-                }}
-              />
-            }
-            label="Use Custom Color"
-            sx={{ mb: 2 }}
-          />
-          {useCustomColor ? (
-            <CustomColorInput
-              value={rectangle.customColor || '#000000'}
-              onChange={(color) => {
-                updateRectangle(rectangle.id, { customColor: color });
-              }}
-            />
-          ) : (
-            <ColorSelector
-              onChange={(color) => {
-                updateRectangle(rectangle.id, { color, customColor: '' });
-              }}
-              activeColor={rectangle.color}
-            />
-          )}
-        </Section>
-        <Section>
-          <Box>
-            <DeleteButton
-              onClick={() => {
-                uiStateActions.setItemControls(null);
-                deleteRectangle(rectangle.id);
-              }}
-            />
-          </Box>
-        </Section>
+
+        <Stack alignItems="center" spacing={1}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#94a3b8',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em'
+            }}
+          >
+            Rectangle
+          </Typography>
+        </Stack>
       </Box>
+
+      <Section title="Color">
+        <FormControlLabel
+          control={
+            <Switch
+              checked={useCustomColor}
+              onChange={(e) => {
+                setUseCustomColor(e.target.checked);
+                if (!e.target.checked) {
+                  updateRectangle(rectangle.id, { customColor: '' });
+                }
+              }}
+            />
+          }
+          label="Use Custom Color"
+          sx={{ mb: 2 }}
+        />
+        {useCustomColor ? (
+          <CustomColorInput
+            value={rectangle.customColor || '#000000'}
+            onChange={(color) => {
+              updateRectangle(rectangle.id, { customColor: color });
+            }}
+          />
+        ) : (
+          <ColorSelector
+            onChange={(color) => {
+              updateRectangle(rectangle.id, { color, customColor: '' });
+            }}
+            activeColor={rectangle.color}
+          />
+        )}
+      </Section>
+      <Section sx={{ pb: 4 }}>
+        <Box>
+          <DeleteButton
+            onClick={() => {
+              uiStateActions.setItemControls(null);
+              deleteRectangle(rectangle.id);
+            }}
+          />
+        </Box>
+      </Section>
     </ControlsContainer>
   );
 };

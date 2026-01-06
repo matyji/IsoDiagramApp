@@ -6,7 +6,7 @@ const locale: LocaleProps = {
   },
   mainMenu: {
     undo: "Undo",
-    redo: "Redo", 
+    redo: "Redo",
     open: "Open",
     exportJson: "Export as JSON",
     exportCompactJson: "Export as Compact JSON",

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Stack, Button, IconButton as MUIIconButton } from '@mui/material';
+import { Box, Stack, Button, IconButton as MUIIconButton, Typography } from '@mui/material';
 import {
   ChevronRight as ChevronRightIcon,
   ChevronLeft as ChevronLeftIcon,
@@ -64,10 +64,11 @@ export const NodeControls = ({ id }: Props) => {
     <ControlsContainer>
       <Box
         sx={{
-          bgcolor: (theme) => {
-            return theme.customVars.customPalette.diagramBg;
-          },
-          position: 'relative'
+          bgcolor: 'white',
+          position: 'relative',
+          pt: 4,
+          pb: 2,
+          borderBottom: '1px solid #f1f5f9'
         }}
       >
         {/* Close button */}
@@ -78,46 +79,85 @@ export const NodeControls = ({ id }: Props) => {
           }}
           sx={{
             position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 2
+            top: 12,
+            right: 12,
+            zIndex: 2,
+            color: '#cbd5e1',
+            '&:hover': {
+              color: '#94a3b8'
+            }
           }}
           size="small"
         >
-          <CloseIcon />
+          <CloseIcon sx={{ fontSize: 20 }} />
         </MUIIconButton>
-        <Section sx={{ py: 2 }}>
-          <Stack
-            direction="row"
-            spacing={2}
-            alignItems="flex-end"
-            justifyContent="space-between"
+
+        <Stack alignItems="center" spacing={2}>
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 3,
+              border: '1px solid #f1f5f9',
+              bgcolor: 'white',
+              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)'
+            }}
           >
             <Box
               component="img"
               src={icon.url}
-              sx={{ width: 70, height: 70 }}
+              sx={{ width: 48, height: 48, objectFit: 'contain' }}
             />
+          </Box>
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#94a3b8',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em'
+            }}
+          >
+            Node
+          </Typography>
+        </Stack>
+
+        <Section sx={{ mt: 1, px: 3, pt: 0 }}>
+          <Stack direction="row" justifyContent="center">
             {mode === 'SETTINGS' && (
               <Button
-                endIcon={<ChevronRightIcon />}
+                size="small"
                 onClick={() => {
                   onSwitchMode('CHANGE_ICON');
                 }}
                 variant="text"
+                sx={{
+                  color: '#2563eb',
+                  fontWeight: 600,
+                  fontSize: '0.75rem'
+                }}
               >
-                Update icon
+                Change Icon
               </Button>
             )}
             {mode === 'CHANGE_ICON' && (
               <Button
+                size="small"
                 startIcon={<ChevronLeftIcon />}
                 onClick={() => {
                   onSwitchMode('SETTINGS');
                 }}
                 variant="text"
+                sx={{
+                  color: '#2563eb',
+                  fontWeight: 600,
+                  fontSize: '0.75rem'
+                }}
               >
-                Settings
+                Back to Settings
               </Button>
             )}
           </Stack>

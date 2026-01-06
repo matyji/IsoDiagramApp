@@ -44,7 +44,7 @@ export const QuickIconSelector = ({ onIconSelected, onClose, currentIconId }: Pr
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredIndex, setHoveredIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  
+
   const icons = useModelStore((state) => state.icons);
   const { iconCategories } = useIconCategories();
 
@@ -59,7 +59,7 @@ export const QuickIconSelector = ({ onIconSelected, onClose, currentIconId }: Pr
   // Filter icons based on search
   const filteredIcons = useMemo(() => {
     if (!searchTerm) return null;
-    
+
     try {
       // Escape special regex characters to prevent errors
       const escapedSearch = escapeRegex(searchTerm);
@@ -82,32 +82,32 @@ export const QuickIconSelector = ({ onIconSelected, onClose, currentIconId }: Pr
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle navigation if we're showing search results
       if (!filteredIcons || filteredIcons.length === 0) return;
-      
+
       const itemsPerRow = 4; // Adjust based on your grid layout
       const totalItems = filteredIcons.length;
 
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setHoveredIndex(prev => 
+          setHoveredIndex(prev =>
             Math.min(prev + itemsPerRow, totalItems - 1)
           );
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setHoveredIndex(prev => 
+          setHoveredIndex(prev =>
             Math.max(prev - itemsPerRow, 0)
           );
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          setHoveredIndex(prev => 
+          setHoveredIndex(prev =>
             prev > 0 ? prev - 1 : prev
           );
           break;
         case 'ArrowRight':
           e.preventDefault();
-          setHoveredIndex(prev => 
+          setHoveredIndex(prev =>
             prev < totalItems - 1 ? prev + 1 : prev
           );
           break;
@@ -146,7 +146,7 @@ export const QuickIconSelector = ({ onIconSelected, onClose, currentIconId }: Pr
           <TextField
             ref={searchInputRef}
             fullWidth
-            placeholder="Search icons (press Enter to select)"
+            placeholder="Search icons..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -155,9 +155,29 @@ export const QuickIconSelector = ({ onIconSelected, onClose, currentIconId }: Pr
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon />
+                  <SearchIcon sx={{ color: '#94a3b8' }} />
                 </InputAdornment>
               )
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                bgcolor: '#f8fafc',
+                '& fieldset': {
+                  borderColor: '#e2e8f0',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#cbd5e1',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#2563eb',
+                  borderWidth: '1px',
+                },
+              },
+              '& .MuiInputBase-input': {
+                fontSize: '0.875rem',
+                py: 1.2
+              }
             }}
             size="small"
             autoFocus
@@ -166,15 +186,24 @@ export const QuickIconSelector = ({ onIconSelected, onClose, currentIconId }: Pr
           {/* Recently Used Icons - Show when no search */}
           {!searchTerm && recentIcons.length > 0 && (
             <>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#64748b',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
                 RECENTLY USED
               </Typography>
               <IconGrid
                 icons={recentIcons}
+                selectedIconId={currentIconId}
                 onClick={handleIconSelect}
                 onDoubleClick={handleIconDoubleClick}
               />
-              <Divider />
+              <Divider sx={{ my: 1, opacity: 0.5 }} />
             </>
           )}
         </Stack>
@@ -184,16 +213,25 @@ export const QuickIconSelector = ({ onIconSelected, onClose, currentIconId }: Pr
       {searchTerm && filteredIcons && (
         <>
           <Section sx={{ py: 1 }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              sx={{
+                color: '#64748b',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}
+            >
               SEARCH RESULTS ({filteredIcons.length} icons)
             </Typography>
           </Section>
-          <Divider />
+          <Divider sx={{ mb: 2, opacity: 0.5 }} />
           <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
             {filteredIcons.length > 0 ? (
-              <Section>
+              <Section sx={{ pt: 0 }}>
                 <IconGrid
                   icons={filteredIcons}
+                  selectedIconId={currentIconId}
                   onClick={handleIconSelect}
                   onDoubleClick={handleIconDoubleClick}
                   hoveredIndex={hoveredIndex}
@@ -215,7 +253,7 @@ export const QuickIconSelector = ({ onIconSelected, onClose, currentIconId }: Pr
           <Icons
             iconCategories={iconCategories}
             onClick={handleIconSelect}
-            onMouseDown={() => {}} // Not needed for selection
+            onMouseDown={() => { }} // Not needed for selection
           />
         </Box>
       )}
@@ -223,7 +261,7 @@ export const QuickIconSelector = ({ onIconSelected, onClose, currentIconId }: Pr
       {/* Help Text */}
       <Section sx={{ py: 1 }}>
         <Typography variant="caption" color="text.secondary">
-          {searchTerm 
+          {searchTerm
             ? 'Use arrow keys to navigate • Enter to select • Double-click to select and close'
             : 'Type to search • Click category to expand • Double-click to select and close'
           }
