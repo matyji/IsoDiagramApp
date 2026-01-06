@@ -2,7 +2,12 @@ import { LocaleProps } from '../types/isoflowProps';
 
 const locale: LocaleProps = {
   common: {
-    exampleText: "यह एक उदाहरण पाठ है"
+    exampleText: "यह एक उदाहरण पाठ है",
+    cancel: "Cancel",
+    done: "Done",
+    ok: "OK",
+    save: "Save",
+    delete: "Delete"
   },
   mainMenu: {
     undo: "पूर्ववत करें",
@@ -112,6 +117,7 @@ const locale: LocaleProps = {
     instructionEnd: "इसे बदलने के लिए!"
   },
   settings: {
+    title: "Settings",
     zoom: {
       description: "माउस व्हील का उपयोग करते समय ज़ूम व्यवहार को कॉन्फ़िगर करें।",
       zoomToCursor: "कर्सर पर ज़ूम करें",

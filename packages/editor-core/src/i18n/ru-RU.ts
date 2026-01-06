@@ -2,7 +2,12 @@ import { LocaleProps } from '../types/isoflowProps';
 
 const locale: LocaleProps = {
   common: {
-    exampleText: "Это пример текста"
+    exampleText: "Это пример текста",
+    cancel: "Отмена",
+    done: "Готово",
+    ok: "OK",
+    save: "Сохранить",
+    delete: "Удалить"
   },
   mainMenu: {
     undo: "Отменить",
@@ -112,6 +117,7 @@ const locale: LocaleProps = {
     instructionEnd: "чтобы изменить его!"
   },
   settings: {
+    title: "Настройки",
     zoom: {
       description: "Настройте поведение масштабирования при использовании колесика мыши.",
       zoomToCursor: "Масштабировать к курсору",

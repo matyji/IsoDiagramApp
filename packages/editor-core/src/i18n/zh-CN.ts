@@ -2,11 +2,16 @@ import { LocaleProps } from '../types/isoflowProps';
 
 const locale: LocaleProps = {
   common: {
-    exampleText: "这是一段示例文本"
+    exampleText: "这是一段示例文本",
+    cancel: "取消",
+    done: "完成",
+    ok: "确定",
+    save: "保存",
+    delete: "删除"
   },
   mainMenu: {
     undo: "撤销",
-    redo: "重做", 
+    redo: "重做",
     open: "打开",
     exportJson: "导出为 JSON",
     exportCompactJson: "导出为紧凑 JSON",
@@ -112,6 +117,7 @@ const locale: LocaleProps = {
     instructionEnd: "即可更改！"
   },
   settings: {
+    title: "设置",
     zoom: {
       description: "配置使用鼠标滚轮时的缩放行为。",
       zoomToCursor: "光标缩放",

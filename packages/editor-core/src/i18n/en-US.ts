@@ -2,7 +2,12 @@ import { LocaleProps } from '../types/isoflowProps';
 
 const locale: LocaleProps = {
   common: {
-    exampleText: "This is an example text"
+    exampleText: "This is an example text",
+    cancel: "Cancel",
+    done: "Done",
+    ok: "OK",
+    save: "Save",
+    delete: "Delete"
   },
   mainMenu: {
     undo: "Undo",
@@ -112,6 +117,7 @@ const locale: LocaleProps = {
     instructionEnd: "to change it!"
   },
   settings: {
+    title: "Settings",
     zoom: {
       description: "Configure zoom behavior when using the mouse wheel.",
       zoomToCursor: "Zoom to Cursor",

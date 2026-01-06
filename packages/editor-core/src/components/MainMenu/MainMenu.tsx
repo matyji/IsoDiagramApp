@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Menu, Typography, Divider, Card } from '@mui/material';
+import { Menu, Typography, Divider, Card, Box } from '@mui/material';
 import {
   Menu as MenuIcon,
   GitHub as GitHubIcon,
@@ -175,104 +175,143 @@ export const MainMenu = () => {
         }}
         elevation={0}
         sx={{
-          mt: 2
-        }}
-        MenuListProps={{
-          sx: {
-            minWidth: '250px',
-            py: 0
+          mt: 1.5,
+          '& .MuiPaper-root': {
+            borderRadius: 3,
+            minWidth: 260,
+            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)',
+            border: '1px solid #f1f5f9',
+            p: 1
           }
         }}
+        MenuListProps={{
+          sx: { py: 0 }
+        }}
       >
-        <Card sx={{ py: 1 }}>
-          {/* Undo/Redo Section */}
-          <MenuItem
-            onClick={handleUndo}
-            Icon={<UndoIcon />}
-            disabled={!canUndo}
+        {/* Undo/Redo Section */}
+        <Box sx={{ px: 2, pt: 1, pb: 0.5 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#94a3b8',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}
           >
-            {t('undo')}
-          </MenuItem>
+            History
+          </Typography>
+        </Box>
+        <MenuItem
+          onClick={handleUndo}
+          Icon={<UndoIcon />}
+          disabled={!canUndo}
+        >
+          {t('undo')}
+        </MenuItem>
 
-          <MenuItem
-            onClick={handleRedo}
-            Icon={<RedoIcon />}
-            disabled={!canRedo}
-          >
-            {t('redo')}
-          </MenuItem>
+        <MenuItem
+          onClick={handleRedo}
+          Icon={<RedoIcon />}
+          disabled={!canRedo}
+        >
+          {t('redo')}
+        </MenuItem>
 
+        {(canUndo || canRedo) && sectionVisibility.actions && <Divider sx={{ my: 1, opacity: 0.6 }} />}
 
-          {(canUndo || canRedo) && sectionVisibility.actions && <Divider />}
+        {/* File Actions */}
+        {sectionVisibility.actions && (
+          <>
+            <Box sx={{ px: 2, pt: 1, pb: 0.5 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#94a3b8',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                File
+              </Typography>
+            </Box>
+            {mainMenuOptions.includes('ACTION.OPEN') && (
+              <MenuItem onClick={onOpenModel} Icon={<FolderOpenIcon />}>
+                {t('open')}
+              </MenuItem>
+            )}
 
-          {/* File Actions */}
-          {mainMenuOptions.includes('ACTION.OPEN') && (
-            <MenuItem onClick={onOpenModel} Icon={<FolderOpenIcon />}>
-              {t('open')}
+            {mainMenuOptions.includes('EXPORT.JSON') && (
+              <MenuItem onClick={onExportAsJSON} Icon={<ExportJsonIcon />}>
+                {t('exportJson')}
+              </MenuItem>
+            )}
+
+            {mainMenuOptions.includes('EXPORT.JSON') && (
+              <MenuItem onClick={onExportAsCompactJSON} Icon={<ExportJsonIcon />}>
+                {t('exportCompactJson')}
+              </MenuItem>
+            )}
+
+            {mainMenuOptions.includes('EXPORT.PNG') && (
+              <MenuItem onClick={onExportAsImage} Icon={<ExportImageIcon />}>
+                {t('exportImage')}
+              </MenuItem>
+            )}
+
+            {mainMenuOptions.includes('ACTION.CLEAR_CANVAS') && (
+              <MenuItem onClick={onClearCanvas} Icon={<DeleteOutlineIcon />}>
+                {t('clearCanvas')}
+              </MenuItem>
+            )}
+            <Divider sx={{ my: 1, opacity: 0.6 }} />
+          </>
+        )}
+
+        {/* App Info / Links Section */}
+        {sectionVisibility.links && (
+          <>
+            <Box sx={{ px: 2, pt: 1, pb: 0.5 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#94a3b8',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                Application
+              </Typography>
+            </Box>
+            <MenuItem onClick={onOpenSettings} Icon={<SettingsIcon />}>
+              {t('settings')}
             </MenuItem>
-          )}
 
-          {mainMenuOptions.includes('EXPORT.JSON') && (
-            <MenuItem onClick={onExportAsJSON} Icon={<ExportJsonIcon />}>
-              {t('exportJson')}
-            </MenuItem>
-          )}
+            {mainMenuOptions.includes('LINK.GITHUB') && (
+              <MenuItem
+                onClick={() => {
+                  return gotoUrl(`${REPOSITORY_URL}`);
+                }}
+                Icon={<GitHubIcon />}
+              >
+                {t('gitHub')}
+              </MenuItem>
+            )}
+          </>
+        )}
 
-          {mainMenuOptions.includes('EXPORT.JSON') && (
-            <MenuItem onClick={onExportAsCompactJSON} Icon={<ExportJsonIcon />}>
-              {t('exportCompactJson')}
-            </MenuItem>
-          )}
-
-          {mainMenuOptions.includes('EXPORT.PNG') && (
-            <MenuItem onClick={onExportAsImage} Icon={<ExportImageIcon />}>
-              {t('exportImage')}
-            </MenuItem>
-          )}
-
-          {mainMenuOptions.includes('ACTION.CLEAR_CANVAS') && (
-            <MenuItem onClick={onClearCanvas} Icon={<DeleteOutlineIcon />}>
-              {t('clearCanvas')}
-            </MenuItem>
-          )}
-
-          <Divider />
-
-          <MenuItem onClick={onOpenSettings} Icon={<SettingsIcon />}>
-            {t('settings')}
-          </MenuItem>
-
-          {sectionVisibility.links && (
-            <>
-              <Divider />
-
-              {mainMenuOptions.includes('LINK.GITHUB') && (
-                <MenuItem
-                  onClick={() => {
-                    return gotoUrl(`${REPOSITORY_URL}`);
-                  }}
-                  Icon={<GitHubIcon />}
-                >
-                  {t('gitHub')}
-                </MenuItem>
-              )}
-            </>
-          )}
-
-          {sectionVisibility.version && (
-            <>
-              <Divider />
-
-              {mainMenuOptions.includes('VERSION') && (
-                <MenuItem>
-                  <Typography variant="body2" color="text.secondary">
-                    FossFLOW v{PACKAGE_VERSION}
-                  </Typography>
-                </MenuItem>
-              )}
-            </>
-          )}
-        </Card>
+        {sectionVisibility.version && (
+          <>
+            <Divider sx={{ my: 1, opacity: 0.6 }} />
+            <Box sx={{ py: 1, px: 2, textAlign: 'center' }}>
+              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 500 }}>
+                FossFLOW v{PACKAGE_VERSION}
+              </Typography>
+            </Box>
+          </>
+        )}
       </Menu>
     </UiElement>
   );

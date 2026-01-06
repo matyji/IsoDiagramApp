@@ -2,11 +2,16 @@ import { LocaleProps } from '../types/isoflowProps';
 
 const locale: LocaleProps = {
   common: {
-    exampleText: "To jest przykładowy tekst"
+    exampleText: "To jest przykładowy tekst",
+    cancel: "Anuluj",
+    done: "Gotowe",
+    ok: "OK",
+    save: "Zapisz",
+    delete: "Usuń"
   },
   mainMenu: {
     undo: "Cofnij",
-    redo: "Ponów", 
+    redo: "Ponów",
     open: "Otwórz",
     exportJson: "Eksportuj do JSON",
     exportCompactJson: "Eksportuj jako kompaktowy JSON",
@@ -112,6 +117,7 @@ const locale: LocaleProps = {
     instructionEnd: "aby zmienić!"
   },
   settings: {
+    title: "Ustawienia",
     zoom: {
       description: "Skonfiguruj zachowanie powiększania podczas korzystania z kółka myszy.",
       zoomToCursor: "Powiększ do kursora",

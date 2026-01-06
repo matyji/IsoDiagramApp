@@ -10,6 +10,11 @@ export type InitialData = Model & {
 export interface LocaleProps {
   common: {
     exampleText: string;
+    cancel: string;
+    done: string;
+    ok: string;
+    save: string;
+    delete: string;
   };
   mainMenu: {
     undo: string;
@@ -119,6 +124,7 @@ export interface LocaleProps {
     instructionEnd: string;
   };
   settings: {
+    title: string;
     zoom: {
       description: string;
       zoomToCursor: string;

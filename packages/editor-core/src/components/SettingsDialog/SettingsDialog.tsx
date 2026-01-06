@@ -60,32 +60,59 @@ export const SettingsDialog = ({ iconPackManager }: SettingsDialogProps) => {
       maxWidth="md"
       fullWidth
     >
-      <DialogTitle>
-        Settings
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {t('settings.title') || 'Settings'}
         <IconButton
           aria-label="close"
           onClick={handleClose}
           sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
+            color: '#94a3b8',
+            bgcolor: '#f8fafc',
+            '&:hover': {
+              bgcolor: '#f1f5f9',
+              color: '#64748b'
+            },
+            width: 32,
+            height: 32,
+            transition: 'all 0.2s'
           }}
         >
-          <CloseIcon />
+          <CloseIcon sx={{ fontSize: 18 }} />
         </IconButton>
       </DialogTitle>
-      <DialogContent dividers>
-        <Tabs value={tabValue} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tab label={t('settings.hotkeys.title')} />
-          <Tab label={t('settings.pan.title')} />
-          <Tab label="Zoom" />
-          <Tab label="Labels" />
-          <Tab label={t('settings.connector.title')} />
-          {iconPackManager && <Tab label={t('settings.iconPacks.title')} />}
-        </Tabs>
+      <DialogContent>
+        <Box sx={{
+          bgcolor: '#f8fafc',
+          borderRadius: 3,
+          p: 0.5,
+          mb: 3,
+          display: 'inline-flex'
+        }}>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            sx={{
+              '& .MuiTabs-indicator': { display: 'none' },
+              '& .MuiTab-root': {
+                borderRadius: 2.5,
+                '&.Mui-selected': {
+                  bgcolor: 'white',
+                  boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+                  color: '#2563eb'
+                }
+              }
+            }}
+          >
+            <Tab label={t('settings.hotkeys.title')} />
+            <Tab label={t('settings.pan.title') || 'Pan'} />
+            <Tab label="Zoom" />
+            <Tab label="Labels" />
+            <Tab label={t('settings.connector.title')} />
+            {iconPackManager && <Tab label={t('settings.iconPacks.title')} />}
+          </Tabs>
+        </Box>
 
-        <Box sx={{ mt: 2 }}>
+        <Box>
           {tabValue === 0 && <HotkeySettings />}
           {tabValue === 1 && <PanSettings />}
           {tabValue === 2 && <ZoomSettings />}
@@ -103,7 +130,19 @@ export const SettingsDialog = ({ iconPackManager }: SettingsDialogProps) => {
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Close</Button>
+        <Button
+          onClick={handleClose}
+          variant="text"
+          sx={{ color: '#64748b' }}
+        >
+          {t('common.cancel') || 'Cancel'}
+        </Button>
+        <Button
+          onClick={handleClose}
+          sx={{ px: 4 }}
+        >
+          {t('common.done') || 'Done'}
+        </Button>
       </DialogActions>
     </Dialog>
   );

@@ -116,7 +116,67 @@ export const themeConfig: ThemeOptions = {
       },
       styleOverrides: {
         root: {
-          textTransform: 'none'
+          textTransform: 'none',
+          borderRadius: 8,
+          fontWeight: 600,
+          padding: '8px 16px'
+        }
+      }
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: 24,
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+          padding: 8
+        }
+      }
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          fontSize: '1.25rem',
+          fontWeight: 700,
+          padding: '24px 24px 16px',
+          color: '#1e293b'
+        }
+      }
+    },
+    MuiDialogContent: {
+      styleOverrides: {
+        root: {
+          padding: '16px 24px 24px',
+          border: 'none !important'
+        }
+      }
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          padding: '12px 24px 24px',
+          gap: 8
+        }
+      }
+    },
+    MuiTabs: {
+      styleOverrides: {
+        root: {
+          minHeight: 40,
+        },
+        indicator: {
+          height: 3,
+          borderRadius: '3px 3px 0 0'
+        }
+      }
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
+          fontSize: '0.875rem',
+          minHeight: 40,
+          padding: '12px 16px'
         }
       }
     },
@@ -126,18 +186,31 @@ export const themeConfig: ThemeOptions = {
       },
       styleOverrides: {
         root: {
-          width: 17,
-          height: 17
+          width: 20,
+          height: 20
         }
       }
     },
     MuiTextField: {
       defaultProps: {
-        variant: 'outlined'
+        variant: 'outlined',
+        size: 'small'
       },
       styleOverrides: {
         root: {
-          '.MuiInputBase-input': {}
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 8,
+            backgroundColor: '#f8fafc',
+            '& fieldset': {
+              borderColor: '#e2e8f0',
+            },
+            '&:hover fieldset': {
+              borderColor: '#cbd5e1',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#2563eb',
+            },
+          }
         }
       }
     }
