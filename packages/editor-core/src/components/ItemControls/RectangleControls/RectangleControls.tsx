@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, IconButton as MUIIconButton, FormControlLabel, Switch, Typography, Stack } from '@mui/material';
+import { Box, IconButton as MUIIconButton, FormControlLabel, Switch, Typography, Stack, Slider } from '@mui/material';
 import { useRectangle } from 'src/hooks/useRectangle';
 import { ColorSelector } from 'src/components/ColorSelector/ColorSelector';
 import { ColorPicker } from 'src/components/ColorSelector/ColorPicker';
@@ -106,6 +106,24 @@ export const RectangleControls = ({ id }: Props) => {
             activeColor={rectangle.color}
           />
         )}
+      </Section>
+      <Section title="Format 3D">
+        <Typography variant="caption" sx={{ color: 'text.secondary', mb: 1, display: 'block' }}>
+          Hauteur (épaisseur)
+        </Typography>
+        <Box sx={{ px: 1 }}>
+          <Slider
+            value={rectangle.height ?? 0}
+            min={0}
+            max={300}
+            step={5}
+            size="small"
+            onChange={(_, value) => {
+              updateRectangle(rectangle.id, { height: value as number });
+            }}
+            valueLabelDisplay="auto"
+          />
+        </Box>
       </Section>
       <Section sx={{ pb: 4 }}>
         <Box>

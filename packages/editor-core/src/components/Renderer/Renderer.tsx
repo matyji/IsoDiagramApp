@@ -56,6 +56,19 @@ export const Renderer = ({ showGrid, backgroundColor }: RendererProps) => {
         bgcolor: (theme) => backgroundColor === 'transparent' ? 'transparent' : (backgroundColor ?? theme.customVars.customPalette.diagramBg)
       }}
     >
+      {isShowGrid && (
+        <Box
+          sx={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            top: 0,
+            left: 0
+          }}
+        >
+          <Grid />
+        </Box>
+      )}
       <SceneLayer>
         <Rectangles rectangles={rectangles} />
       </SceneLayer>
@@ -63,17 +76,6 @@ export const Renderer = ({ showGrid, backgroundColor }: RendererProps) => {
         <Lasso />
       </SceneLayer>
       <FreehandLasso />
-      <Box
-        sx={{
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
-          top: 0,
-          left: 0
-        }}
-      >
-        {isShowGrid && <Grid />}
-      </Box>
       {mode.showCursor && (
         <SceneLayer>
           <Cursor />

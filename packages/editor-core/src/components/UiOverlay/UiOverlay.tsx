@@ -286,7 +286,7 @@ export const UiOverlay = () => {
                 </Typography>
               )}
               <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.7 }}>
-                (Stockage session uniquement - exportez pour sauvegarder définitivement)
+                (Stockage session uniquement)
               </Typography>
             </Stack>
           </UiElement>
