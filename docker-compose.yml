@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  isodiagram:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - isodiagram-data:/app/data/diagrams
+    environment:
+      - BACKEND_PORT=3001
+      - ENABLE_SERVER_STORAGE=true
+      - STORAGE_PATH=/app/data/diagrams
+      - WEB_APP_URL=http://localhost:3001
+    restart: unless-stopped
+
+volumes:
+  isodiagram-data:

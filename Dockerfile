@@ -1,0 +1,92 @@
+# Build Stage
+FROM node:20-slim AS build
+
+WORKDIR /app
+
+# Copy package management files
+COPY package.json ./
+COPY apps/web/package.json ./apps/web/
+COPY apps/api/package.json ./apps/api/
+COPY packages/editor-core/package.json ./packages/editor-core/
+
+# Install dependencies with legacy peer deps for compatibility if needed
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build library, then web
+RUN npm run build:lib
+RUN npm run build:web
+
+# Production Stage
+FROM node:20-slim
+
+# Install Puppeteer dependencies (Chrome/Chromium runtime)
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libc6 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libfontconfig1 \
+    libgbm1 \
+    libgcc1 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    lsb-release \
+    wget \
+    xdg-utils \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy built assets and necessary files
+COPY --from=build /app/package.json ./
+COPY --from=build /app/apps/api ./apps/api
+COPY --from=build /app/apps/web/build ./apps/web/build
+COPY --from=build /app/packages/editor-core ./packages/editor-core
+COPY --from=build /app/node_modules ./node_modules
+
+# Default environment configuration
+ENV NODE_ENV=production
+ENV BACKEND_PORT=3001
+ENV ENABLE_SERVER_STORAGE=true
+ENV STORAGE_PATH=/app/data/diagrams
+ENV WEB_APP_URL=http://localhost:3001
+
+# Expose the combined port
+EXPOSE 3001
+
+# Create storage volume directory
+RUN mkdir -p /app/data/diagrams
+
+# Define the volume for persistent data
+VOLUME ["/app/data/diagrams"]
+
+# Start the combined server (API + Static Web)
+CMD ["npm", "run", "start", "--workspace=apps/api"]

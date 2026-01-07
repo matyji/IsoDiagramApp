@@ -375,6 +375,20 @@ if (STORAGE_ENABLED) {
   });
 }
 
+
+// Serve static files from the built web app
+const webAppPath = path.join(__dirname, '../web/build');
+app.use(express.static(webAppPath));
+
+// Catch-all route for SPA
+app.get('*', (req, res, next) => {
+  // If the request is for an API endpoint that wasn't matched, skip to next (404)
+  if (req.url.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(webAppPath, 'index.html'));
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`FossFLOW Backend Server running on port ${PORT}`);

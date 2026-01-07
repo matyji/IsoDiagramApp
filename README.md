@@ -104,6 +104,32 @@ Si vous modifiez `packages/editor-core`, vous devez recompiler la bibliothèque 
 npm run build:lib
 ```
 
+
+---
+
+## 🐳 Docker
+
+Vous pouvez lancer l'application complète (Frontend + API) en utilisant Docker.
+
+### 1. Utilisation de Docker Compose (Recommandé)
+Cela lancera l'application et configurera un volume persistant pour vos diagrammes.
+
+```bash
+docker-compose up -d
+```
+> Accès : `http://localhost:3001`
+
+### 2. Construction manuelle de l'image
+```bash
+docker build -t isodiagram-app .
+docker run -p 3001:3001 -v $(pwd)/data:/app/data/diagrams isodiagram-app
+```
+
+### Notes sur Docker :
+- L'image inclut toutes les dépendances nécessaires pour **Puppeteer** (export image).
+- Le serveur API à l'intérieur du container s'occupe de servir les fichiers statiques du Frontend.
+- Les diagrammes sont persistés dans le dossier `/app/data/diagrams` (mappé via le volume).
+
 ---
 
 ## 📜 Licence
