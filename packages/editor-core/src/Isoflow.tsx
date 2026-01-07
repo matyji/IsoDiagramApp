@@ -93,9 +93,20 @@ const App = (props: IsoflowProps) => {
   const rendererEl = useUiStateStore((state) => state.rendererEl);
   const viewId = useUiStateStore((state) => state.view);
   const views = useModelStore((state) => state.views);
+  const hasFitToViewRef = React.useRef(false);
+
+  // Reset the ref when not ready or when the view changes
+  useEffect(() => {
+    if (!initialDataManager.isReady) {
+      hasFitToViewRef.current = false;
+    }
+  }, [initialDataManager.isReady, viewId]);
 
   useEffect(() => {
     if (!initialDataManager.isReady || !rendererEl || !initialData?.fitToView || !views || views.length === 0) return;
+
+    // In editable mode, only fit once per view change/load to avoid jumping while adding elements
+    if (editorMode !== 'NON_INTERACTIVE' && hasFitToViewRef.current) return;
 
     const rendererSize = rendererEl.getBoundingClientRect();
     const width = rendererSize.width;
@@ -115,11 +126,12 @@ const App = (props: IsoflowProps) => {
       });
 
       uiStateActions.setZoom(zoom);
+      hasFitToViewRef.current = true;
       console.log(`[Isoflow] fitToView applied: zoom=${zoom}, scroll=${JSON.stringify(scroll)}`);
     } else {
       console.warn('[Isoflow] rendererEl has 0 size, skipping fitToView');
     }
-  }, [initialDataManager.isReady, rendererEl, initialData?.fitToView, viewId, views, uiStateActions]);
+  }, [initialDataManager.isReady, rendererEl, initialData?.fitToView, viewId, views, uiStateActions, editorMode]);
 
   if (!initialDataManager.isReady) return null;
 
