@@ -102,12 +102,14 @@ export const useInteractionManager = () => {
         return;
       }
 
-      // Don't handle shortcuts when typing in input fields
+      // Don't handle shortcuts when typing in input fields or interacting with UI elements
       const target = e.target as HTMLElement;
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.contentEditable === 'true' ||
+        target.getAttribute('role') === 'slider' ||
+        target.closest('[role="slider"]') ||
         target.closest('.ql-editor') // Quill editor
       ) {
         return;
@@ -241,6 +243,14 @@ export const useInteractionManager = () => {
         return;
       }
 
+      const isRendererInteraction =
+        rendererRef.current === e.target ||
+        rendererRef.current?.contains(e.target as Node);
+
+      if (e.type === 'mousedown' && !isRendererInteraction) {
+        return;
+      }
+
       const mode = modes[uiState.mode.type];
       const modeFunction = getModeFunction(mode, e);
 
@@ -263,7 +273,7 @@ export const useInteractionManager = () => {
         uiState,
         rendererRef: rendererRef.current,
         rendererSize,
-        isRendererInteraction: rendererRef.current === e.target
+        isRendererInteraction
       };
 
       if (reducerTypeRef.current !== uiState.mode.type) {

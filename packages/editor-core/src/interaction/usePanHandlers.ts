@@ -38,36 +38,36 @@ export const usePanHandlers = () => {
   // Check if click is on empty area
   const isEmptyArea = useCallback((e: SlimMouseEvent): boolean => {
     if (!uiState.rendererEl || e.target !== uiState.rendererEl) return false;
-    
+
     const itemAtTile = getItemAtTile({
       tile: uiState.mouse.position.tile,
       scene
     });
-    
+
     return !itemAtTile;
   }, [uiState.rendererEl, uiState.mouse.position.tile, scene]);
 
   // Enhanced mouse down handler
   const handleMouseDown = useCallback((e: SlimMouseEvent): boolean => {
     const panSettings = uiState.panSettings;
-    
+
     // Check for the specific button that was pressed and only handle that one
     // This fixes the issue where enabling both middle and right click causes neither to work
-    
+
     // Middle click pan (button 1)
     if (e.button === 1 && panSettings.middleClickPan) {
       e.preventDefault();
       startPan('middle');
       return true;
     }
-    
+
     // Right click pan (button 2)
     if (e.button === 2 && panSettings.rightClickPan) {
       e.preventDefault();
       startPan('right');
       return true;
     }
-    
+
     // Left button (0) with modifiers or empty area
     if (e.button === 0) {
       // Ctrl + click pan
@@ -76,21 +76,21 @@ export const usePanHandlers = () => {
         startPan('ctrl');
         return true;
       }
-      
+
       // Alt + click pan
       if (panSettings.altClickPan && e.altKey) {
         e.preventDefault();
         startPan('alt');
         return true;
       }
-      
+
       // Empty area click pan
       if (panSettings.emptyAreaClickPan && isEmptyArea(e)) {
         startPan('empty');
         return true;
       }
     }
-    
+
     return false;
   }, [uiState.panSettings, startPan, isEmptyArea]);
 
@@ -106,12 +106,14 @@ export const usePanHandlers = () => {
   // Keyboard pan handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't handle if typing in input fields
+      // Don't handle if typing in input fields or interacting with UI elements
       const target = e.target as HTMLElement;
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.contentEditable === 'true' ||
+        target.getAttribute('role') === 'slider' ||
+        target.closest('[role="slider"]') ||
         target.closest('.ql-editor')
       ) {
         return;

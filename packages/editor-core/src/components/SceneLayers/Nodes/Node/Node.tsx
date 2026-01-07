@@ -19,7 +19,7 @@ interface Props {
 
 export const Node = memo(({ node, order }: Props) => {
   const modelItem = useModelItem(node.id);
-  const { iconComponent } = useIcon(modelItem?.icon);
+  const { iconComponent } = useIcon(modelItem?.icon, node.iconScale);
 
   const position = useMemo(() => {
     return getTilePosition({
