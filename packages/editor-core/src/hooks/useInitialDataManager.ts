@@ -48,7 +48,7 @@ export const useInitialDataManager = () => {
         const newColors = JSON.stringify(_initialData.colors || []);
 
         if (prevConnectors === newConnectors && prevItems === newItems &&
-            prevIcons === newIcons && prevColors === newColors) {
+          prevIcons === newIcons && prevColors === newColors) {
           // Data hasn't actually changed, skip reload
           return;
         }
@@ -114,21 +114,6 @@ export const useInitialDataManager = () => {
 
       changeView(view.value.id, initialData);
 
-      if (initialData.fitToView) {
-        const rendererSize = rendererEl?.getBoundingClientRect();
-
-        const { zoom, scroll } = getFitToViewParams(view.value, {
-          width: rendererSize?.width ?? 0,
-          height: rendererSize?.height ?? 0
-        });
-
-        uiStateActions.setScroll({
-          position: scroll,
-          offset: CoordsUtils.zero()
-        });
-
-        uiStateActions.setZoom(zoom);
-      }
 
       const categoriesState: IconCollectionState[] = categoriseIcons(
         initialData.icons

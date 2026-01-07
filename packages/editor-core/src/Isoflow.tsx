@@ -3,7 +3,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { Box } from '@mui/material';
 import { theme } from 'src/styles/theme';
 import { IsoflowProps } from 'src/types';
-import { setWindowCursor, modelFromModelStore } from 'src/utils';
+import { setWindowCursor, modelFromModelStore, CoordsUtils, getFitToViewParams, getItemByIdOrThrow } from 'src/utils';
 import { useModelStore, ModelProvider } from 'src/stores/modelStore';
 import { SceneProvider } from 'src/stores/sceneStore';
 import { LocaleProvider } from 'src/stores/localeStore';
@@ -90,12 +90,45 @@ const App = (props: IsoflowProps) => {
     uiStateActions.setAppActions(appActions);
   }, [appActions, uiStateActions]);
 
+  const rendererEl = useUiStateStore((state) => state.rendererEl);
+  const viewId = useUiStateStore((state) => state.view);
+  const views = useModelStore((state) => state.views);
+
+  useEffect(() => {
+    if (!initialDataManager.isReady || !rendererEl || !initialData?.fitToView || !views || views.length === 0) return;
+
+    const rendererSize = rendererEl.getBoundingClientRect();
+    const width = rendererSize.width;
+    const height = rendererSize.height;
+
+    if (width > 0 && height > 0) {
+      const view = getItemByIdOrThrow(
+        views,
+        viewId ?? views[0].id
+      );
+
+      const { zoom, scroll } = getFitToViewParams(view.value, { width, height });
+
+      uiStateActions.setScroll({
+        position: scroll,
+        offset: CoordsUtils.zero()
+      });
+
+      uiStateActions.setZoom(zoom);
+      console.log(`[Isoflow] fitToView applied: zoom=${zoom}, scroll=${JSON.stringify(scroll)}`);
+    } else {
+      console.warn('[Isoflow] rendererEl has 0 size, skipping fitToView');
+    }
+  }, [initialDataManager.isReady, rendererEl, initialData?.fitToView, viewId, views, uiStateActions]);
+
   if (!initialDataManager.isReady) return null;
 
   return (
     <>
       <GlobalStyles />
       <Box
+        data-is-ready={initialDataManager.isReady}
+        data-editor-mode={editorMode}
         sx={{
           width,
           height,

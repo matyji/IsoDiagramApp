@@ -237,59 +237,61 @@ export const UiOverlay = () => {
       </Box>
 
       {/* Info Bubble - Positioned relative to the viewport */}
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: appPadding.y,
-          right: appPadding.x,
-          zIndex: theme.zIndex.appBar,
-          pointerEvents: 'none'
-        }}
-      >
-        <UiElement
+      {editorMode !== EditorModeEnum.NON_INTERACTIVE && (
+        <Box
           sx={{
-            display: 'inline-flex',
-            px: 2,
-            py: 0,
-            alignItems: 'center',
-            height: 40,
-            pointerEvents: 'auto'
+            position: 'absolute',
+            bottom: appPadding.y,
+            right: appPadding.x,
+            zIndex: theme.zIndex.appBar,
+            pointerEvents: 'none'
           }}
         >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="body2" color="text.primary" fontWeight={500}>
-              {appActions?.diagramName || title || 'Diagramme sans titre'}
-            </Typography>
-            {appActions?.isModified && (
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#f97316',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-              >
-                <Box
-                  component="span"
-                  sx={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    bgcolor: '#f97316',
-                    mr: 0.5,
-                    display: 'inline-block'
-                  }}
-                />
-                Modifié
+          <UiElement
+            sx={{
+              display: 'inline-flex',
+              px: 2,
+              py: 0,
+              alignItems: 'center',
+              height: 40,
+              pointerEvents: 'auto'
+            }}
+          >
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="body2" color="text.primary" fontWeight={500}>
+                {appActions?.diagramName || title || 'Diagramme sans titre'}
               </Typography>
-            )}
-            <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.7 }}>
-              (Stockage session uniquement - exportez pour sauvegarder définitivement)
-            </Typography>
-          </Stack>
-        </UiElement>
-      </Box>
+              {appActions?.isModified && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#f97316',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: '#f97316',
+                      mr: 0.5,
+                      display: 'inline-block'
+                    }}
+                  />
+                  Modifié
+                </Typography>
+              )}
+              <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.7 }}>
+                (Stockage session uniquement - exportez pour sauvegarder définitivement)
+              </Typography>
+            </Stack>
+          </UiElement>
+        </Box>
+      )}
 
       {mode.type === 'PLACE_ICON' && mode.id && (
         <SceneLayer disableAnimation>
@@ -317,7 +319,7 @@ export const UiOverlay = () => {
       {editorMode === EditorModeEnum.EDITABLE && <LassoHintTooltip toolMenuRef={toolMenuRef} />}
 
       {/* Show lazy loading welcome notification if icon pack manager is provided */}
-      {iconPackManager && <LazyLoadingWelcomeNotification />}
+      {iconPackManager && editorMode !== EditorModeEnum.NON_INTERACTIVE && <LazyLoadingWelcomeNotification />}
 
       <SceneLayer>
         <Box ref={contextMenuAnchorRef} />

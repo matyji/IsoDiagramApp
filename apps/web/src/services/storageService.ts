@@ -26,16 +26,17 @@ class ServerStorage implements StorageService {
   constructor(baseUrl: string = '') {
     // In production (Docker), use relative paths (nginx proxy)
     // In development, use localhost:3001
-    const isDevelopment = window.location.hostname === 'localhost' && window.location.port === '3000';
-    this.baseUrl = baseUrl || (isDevelopment ? 'http://localhost:3001' : '');
+    const isDevelopment = window.location.hostname === 'localhost' &&
+      (window.location.port === '3000' || window.location.port === '3001');
+    this.baseUrl = baseUrl || (isDevelopment ? 'http://localhost:5000' : '');
   }
 
   async isAvailable(): Promise<boolean> {
     // Re-check availability if cache is stale
     const now = Date.now();
     if (this.available !== null &&
-        this.availabilityCheckedAt !== null &&
-        (now - this.availabilityCheckedAt) < this.AVAILABILITY_CACHE_MS) {
+      this.availabilityCheckedAt !== null &&
+      (now - this.availabilityCheckedAt) < this.AVAILABILITY_CACHE_MS) {
       return this.available;
     }
 
@@ -156,7 +157,7 @@ class SessionStorage implements StorageService {
   async listDiagrams(): Promise<DiagramInfo[]> {
     const listStr = sessionStorage.getItem(this.LIST_KEY);
     if (!listStr) return [];
-    
+
     const list = JSON.parse(listStr);
     return list.map((item: any) => ({
       ...item,
@@ -172,7 +173,7 @@ class SessionStorage implements StorageService {
 
   async saveDiagram(id: string, data: Model): Promise<void> {
     sessionStorage.setItem(`${this.KEY_PREFIX}${id}`, JSON.stringify(data));
-    
+
     // Update list
     const list = await this.listDiagrams();
     const existing = list.findIndex(d => d.id === id);
@@ -182,19 +183,19 @@ class SessionStorage implements StorageService {
       lastModified: new Date(),
       size: JSON.stringify(data).length
     };
-    
+
     if (existing >= 0) {
       list[existing] = info;
     } else {
       list.push(info);
     }
-    
+
     sessionStorage.setItem(this.LIST_KEY, JSON.stringify(list));
   }
 
   async deleteDiagram(id: string): Promise<void> {
     sessionStorage.removeItem(`${this.KEY_PREFIX}${id}`);
-    
+
     // Update list
     const list = await this.listDiagrams();
     const filtered = list.filter(d => d.id !== id);

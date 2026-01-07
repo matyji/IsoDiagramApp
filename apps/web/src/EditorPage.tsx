@@ -21,6 +21,8 @@ const coreIcons = flattenCollections([isoflowIsopack]);
 const EditorPage: React.FC = () => {
   const { readonlyDiagramId } = useParams<{ readonlyDiagramId: string }>();
   const isReadonlyUrl = window.location.pathname.startsWith('/display/') && !!readonlyDiagramId;
+  const searchParams = new URLSearchParams(window.location.search);
+  const isExportMode = searchParams.get('export') === 'true';
 
   // Hooks
   const iconPackManager = useIconPackManager(coreIcons);
@@ -30,6 +32,12 @@ const EditorPage: React.FC = () => {
     isReadonlyUrl,
     readonlyDiagramId
   });
+
+  const editorMode = isExportMode
+    ? 'NON_INTERACTIVE'
+    : isReadonlyUrl
+      ? 'EXPLORABLE_READONLY'
+      : 'EDITABLE';
 
   // UI State for Dialogs
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -82,7 +90,7 @@ const EditorPage: React.FC = () => {
           key={diagram.fossflowKey}
           initialData={diagram.diagramData}
           onModelUpdated={diagram.handleModelUpdated}
-          editorMode={isReadonlyUrl ? 'EXPLORABLE_READONLY' : 'EDITABLE'}
+          editorMode={editorMode as any}
           locale={allLocales['fr-FR']}
           onNew={diagram.newDiagram}
           onSave={() => setShowSaveDialog(true)}

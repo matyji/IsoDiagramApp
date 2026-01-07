@@ -1,100 +1,112 @@
-# IsoDiagramApp
+# 🌐 IsoDiagramApp - Créez des Diagrammes Isométriques Premium
 
-IsoDiagramApp est une application web de création de diagrammes isométriques.
-Le projet est structuré comme un **monorepo** regroupant une application web, une API backend optionnelle et une bibliothèque cœur partagée.
-
-Ce dépôt correspond à une base technique nettoyée et restructurée à partir d’un projet open-source, afin de servir de fondation à un nouveau développement.
+**IsoDiagramApp** est une plateforme moderne et puissante pour concevoir des diagrammes d'architecture et de flux avec une esthétique isométrique élégante. Conçu comme un monorepo robuste, il allie une interface utilisateur fluide, un moteur de rendu performant et un stockage backend flexible.
 
 ---
 
-## Structure du projet
+## ✨ Points Forts
 
-```
+- **🎨 Esthétique Premium** : Rendu isométrique soigné avec transparence et ombres douces.
+- **🚀 Performance** : Moteur de rendu optimisé pour une manipulation fluide des objets.
+- **🖼️ Export Haute Définition** : Génération d'images PNG via Puppeteer côté serveur (avec support Retina/4K).
+- **📦 Packs d'Icônes Dynamiques** : Chargement paresseux des icônes (AWS, GCP, Azure, Kubernetes, etc.).
+- **💾 Stockage Hybride** : Session locale ou persistence sur serveur.
+- **🌍 Internationalisation** : Entièrement traduit en Français.
+
+---
+
+## 🏗️ Structure du Monorepo
+
+```bash
 IsoDiagramApp/
-  apps/
-    web/            # Application web (frontend)
-    api/            # Backend Node.js / Express (stockage persistant optionnel)
-  packages/
-    editor-core/    # Bibliothèque cœur de l’éditeur (TypeScript)
-  package.json
-  package-lock.json
-  tsconfig.base.json
+├── apps/
+│   ├── web/        # Application Frontend (Vite/Rsbuild + React)
+│   └── api/        # Serveur Backend (Node.js/Express + Puppeteer)
+├── packages/
+│   └── editor-core/# Bibliothèque Cœur (FossFLOW) - Logique de rendu & Store
+├── data/
+│   └── diagrams/   # Stockage local des diagrammes JSON (côté API)
+└── package.json    # Gestion globale des dépendances & scripts
 ```
 
 ---
 
-## Prérequis
+## 🚀 Démarrage Rapide
 
-* **Node.js** >= 18
-* **npm** >= 9
+### 1. Prérequis
+- **Node.js** >= 18
+- **npm** >= 9
 
----
-
-## Installation
-
-À la racine du dépôt :
-
+### 2. Installation
+À la racine du projet :
 ```bash
 npm install
 ```
 
----
+### 3. Lancer en Développement
+Ouvrez deux terminaux à la racine :
 
-## Développement
+**Terminal 1 : Frontend**
+```bash
+npm run dev
+```
+> Accès : `http://localhost:3000`
 
-### Lancer l’API (backend)
-
+**Terminal 2 : API**
 ```bash
 npm run dev:api
 ```
-
-L’API est un serveur Node.js / Express utilisé pour le stockage persistant (optionnel).
+> Accès : `http://localhost:5000`
 
 ---
 
-### Lancer l’application web (frontend)
+## 🛰️ API Documentation
 
-```bash
-npm run dev:web
+Le serveur API fournit des points d'entrée pour la gestion et l'exportation des diagrammes.
+
+### Point d'entrée de base : `http://localhost:5000`
+
+| Méthode | Endpoint | Description |
+| :--- | :--- | :--- |
+| **GET** | `/api/diagrams` | Liste tous les diagrammes stockés. |
+| **GET** | `/api/diagrams/:id` | Récupère les données JSON d'un diagramme spécifique. |
+| **POST** | `/api/diagrams` | Crée un nouveau diagramme. |
+| **PUT** | `/api/diagrams/:id` | Met à jour ou sauvegarde un diagramme existant. |
+| **DELETE** | `/api/diagrams/:id` | Supprime un diagramme du serveur. |
+| **POST** | `/api/import` | Importe un fichier JSON extérieur. |
+| **GET** | `/api/export/:id` | **Export Image** : Capture le diagramme en PNG. |
+
+#### Focus sur l'Export Image (`GET /api/export/:id`)
+Utilise Puppeteer en arrière-plan pour un rendu identique à celui de l'éditeur.
+- **Paramètre optionnel** : `scale` (ex: `?scale=2`) pour doubler la résolution.
+- **Exemple** : `http://localhost:5000/api/export/diagram2?scale=2`
+
+---
+
+## ⚙️ Configuration (.env)
+
+Créez un fichier `.env` dans `apps/api/` :
+
+```env
+BACKEND_PORT=5000
+ENABLE_SERVER_STORAGE=true
+STORAGE_PATH=./data/diagrams
+WEB_APP_URL=http://localhost:3000
 ```
 
-L’application web consomme la bibliothèque `editor-core` et peut communiquer avec l’API si elle est activée.
-
 ---
 
-## Build
+## 🛠️ Développement de la Bibliothèque
 
-Build de la bibliothèque cœur et de l’application web :
+Si vous modifiez `packages/editor-core`, vous devez recompiler la bibliothèque pour voir les changements dans le web :
 
 ```bash
-npm run build
+npm run build:lib
 ```
 
-> Le backend (`apps/api`) ne nécessite pas de phase de build (serveur Node.js pur).
-
 ---
 
-## Scripts principaux (racine)
+## 📜 Licence
 
-* `npm run dev:web` : lance le frontend
-* `npm run dev:api` : lance le backend en mode développement
-* `npm run build` : build de `editor-core` + `web`
-* `npm run test` : exécute les tests des workspaces (si présents)
-* `npm run lint` : lance le lint sur les workspaces (si configuré)
-
----
-
-## Philosophie du dépôt
-
-* Nettoyage progressif et contrôlé
-* Un refactor = un commit
-* Tests manuels à chaque étape (build + lancement web/api)
-* Suppression des outils et fichiers non nécessaires (docs site, docker, artefacts, etc.)
-
-Ce dépôt sert de **socle technique stable** avant l’ajout de nouvelles fonctionnalités.
-
----
-
-## Licence
-
-Voir le fichier `LICENSE` à la racine du dépôt ainsi que les licences incluses dans les sous-packages.
+© 2026 IsoDiagramApp Team. Tous droits réservés.
+Fondé sur la technologie FossFLOW.

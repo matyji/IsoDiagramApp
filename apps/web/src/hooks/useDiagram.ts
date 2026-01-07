@@ -46,7 +46,7 @@ export const useDiagram = ({
                     ...data,
                     icons: [...coreIcons, ...importedIcons],
                     colors: data.colors?.length ? data.colors : DEFAULT_COLORS,
-                    fitToScreen: data.fitToScreen !== false
+                    fitToView: data.fitToView !== false
                 };
             } catch (e) {
                 console.error('Failed to load last opened data:', e);
@@ -59,7 +59,7 @@ export const useDiagram = ({
             colors: DEFAULT_COLORS,
             items: [],
             views: [],
-            fitToScreen: true
+            fitToView: true
         };
     });
 
@@ -161,7 +161,7 @@ export const useDiagram = ({
             colors: currentModel?.colors || diagramData.colors || [],
             items: currentModel?.items || diagramData.items || [],
             views: currentModel?.views || diagramData.views || [],
-            fitToScreen: true
+            fitToView: true
         };
 
         const newDiagram: SavedDiagram = {
@@ -236,7 +236,7 @@ export const useDiagram = ({
                 colors: DEFAULT_COLORS,
                 items: [],
                 views: [],
-                fitToScreen: true
+                fitToView: true
             };
             setCurrentDiagram(null);
             setDiagramName('');
@@ -256,7 +256,7 @@ export const useDiagram = ({
             colors: model.colors || DEFAULT_COLORS,
             items: model.items || [],
             views: model.views || [],
-            fitToScreen: true
+            fitToView: true
         };
 
         setCurrentModel(updatedModel);
@@ -281,7 +281,7 @@ export const useDiagram = ({
             colors: modelToExport.colors || [],
             items: modelToExport.items || [],
             views: modelToExport.views || [],
-            fitToScreen: true
+            fitToView: true
         };
 
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -315,7 +315,7 @@ export const useDiagram = ({
             title: data.title || data.name || 'Loaded Diagram',
             icons: finalIcons,
             colors: data.colors?.length ? data.colors : DEFAULT_COLORS,
-            fitToScreen: data.fitToScreen !== false
+            fitToView: data.fitToView !== false
         };
 
         const newDiagram = {
@@ -348,7 +348,7 @@ export const useDiagram = ({
                 colors: currentModel.colors || [],
                 items: currentModel.items || [],
                 views: currentModel.views || [],
-                fitToScreen: true
+                fitToView: true
             };
 
             const updatedDiagram: SavedDiagram = {
