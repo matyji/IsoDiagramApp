@@ -1,0 +1,452 @@
+{
+  "title": "Diagramme sans titre",
+  "icons": [
+    {
+      "id": "block",
+      "name": "block",
+      "url": "/assets/base/block.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "cache",
+      "name": "cache",
+      "url": "/assets/base/cache.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "cardterminal",
+      "name": "cardterminal",
+      "url": "/assets/base/cardterminal.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "cloud",
+      "name": "cloud",
+      "url": "/assets/base/cloud.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "cronjob",
+      "name": "cronjob",
+      "url": "/assets/base/cronjob.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "cube",
+      "name": "cube",
+      "url": "/assets/base/cube.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "desktop",
+      "name": "desktop",
+      "url": "/assets/base/desktop.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "diamond",
+      "name": "diamond",
+      "url": "/assets/base/diamond.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "dns",
+      "name": "dns",
+      "url": "/assets/base/dns.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "document",
+      "name": "document",
+      "url": "/assets/base/document.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "firewall",
+      "name": "firewall",
+      "url": "/assets/base/firewall.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "function-module",
+      "name": "function-module",
+      "url": "/assets/base/function-module.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "image",
+      "name": "image",
+      "url": "/assets/base/image.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "laptop",
+      "name": "laptop",
+      "url": "/assets/base/laptop.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "loadbalancer",
+      "name": "loadbalancer",
+      "url": "/assets/base/loadbalancer.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "lock",
+      "name": "lock",
+      "url": "/assets/base/lock.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "mail",
+      "name": "mail",
+      "url": "/assets/base/mail.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "mailmultiple",
+      "name": "mailmultiple",
+      "url": "/assets/base/mailmultiple.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "mobiledevice",
+      "name": "mobiledevice",
+      "url": "/assets/base/mobiledevice.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "office",
+      "name": "office",
+      "url": "/assets/base/office.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "package-module",
+      "name": "package-module",
+      "url": "/assets/base/package-module.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "paymentcard",
+      "name": "paymentcard",
+      "url": "/assets/base/paymentcard.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "plane",
+      "name": "plane",
+      "url": "/assets/base/plane.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "printer",
+      "name": "printer",
+      "url": "/assets/base/printer.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "pyramid",
+      "name": "pyramid",
+      "url": "/assets/base/pyramid.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "queue",
+      "name": "queue",
+      "url": "/assets/base/queue.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "router",
+      "name": "router",
+      "url": "/assets/base/router.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "server",
+      "name": "server",
+      "url": "/assets/base/server.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "speech",
+      "name": "speech",
+      "url": "/assets/base/speech.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "sphere",
+      "name": "sphere",
+      "url": "/assets/base/sphere.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "storage",
+      "name": "storage",
+      "url": "/assets/base/storage.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "switch-module",
+      "name": "switch-module",
+      "url": "/assets/base/switch-module.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "tower",
+      "name": "tower",
+      "url": "/assets/base/tower.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "truck-2",
+      "name": "truck-2",
+      "url": "/assets/base/truck-2.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "truck",
+      "name": "truck",
+      "url": "/assets/base/truck.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "user",
+      "name": "user",
+      "url": "/assets/base/user.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "vm",
+      "name": "vm",
+      "url": "/assets/base/vm.svg",
+      "isIsometric": true,
+      "collection": "isoflow"
+    },
+    {
+      "id": "4167da37-a8af-48c3-8f83-96f48b96fbf6",
+      "name": "ChatGPT-Logo",
+      "url": "/assets/download/icon-1768002485142-699203896.png",
+      "collection": "imported",
+      "isIsometric": true
+    }
+  ],
+  "colors": [
+    {
+      "id": "blue",
+      "value": "#0066cc"
+    },
+    {
+      "id": "green",
+      "value": "#00aa00"
+    },
+    {
+      "id": "red",
+      "value": "#cc0000"
+    },
+    {
+      "id": "orange",
+      "value": "#ff9900"
+    },
+    {
+      "id": "purple",
+      "value": "#9900cc"
+    },
+    {
+      "id": "black",
+      "value": "#000000"
+    },
+    {
+      "id": "gray",
+      "value": "#666666"
+    }
+  ],
+  "items": [
+    {
+      "id": "1709e0ed-669f-4853-8574-015827ea904a",
+      "name": "Untitled",
+      "icon": "block",
+      "description": "<p><br></p>"
+    },
+    {
+      "id": "dab45cf1-3325-40bb-98c5-1a3d8e4e4e8d",
+      "name": "Untitled",
+      "icon": "block"
+    },
+    {
+      "id": "b27b4079-9055-45d2-b098-22d091c24262",
+      "name": "Nouvelle node",
+      "icon": "block",
+      "description": "<p><br></p>"
+    },
+    {
+      "id": "a75284bb-17a6-42ef-992c-9c215c1839e4",
+      "name": "Untitled",
+      "icon": "4167da37-a8af-48c3-8f83-96f48b96fbf6"
+    },
+    {
+      "id": "377cf2e2-fc32-4333-ba26-76cbb5dd3ea7",
+      "name": "Untitled",
+      "icon": "block"
+    },
+    {
+      "id": "8a1f5a3f-3f1c-4202-8fbf-8585ee5721c7",
+      "name": "Untitled",
+      "icon": "block",
+      "description": "<p><br></p>"
+    },
+    {
+      "id": "6b3661c6-bb85-4edb-ac50-31c130725974",
+      "name": "Nouvelle node",
+      "icon": "block"
+    }
+  ],
+  "views": [
+    {
+      "name": "Untitled view",
+      "items": [
+        {
+          "labelHeight": 80,
+          "iconScale": 1,
+          "id": "6b3661c6-bb85-4edb-ac50-31c130725974",
+          "tile": {
+            "x": 2,
+            "y": 0
+          }
+        },
+        {
+          "labelHeight": 80,
+          "iconScale": 1,
+          "id": "8a1f5a3f-3f1c-4202-8fbf-8585ee5721c7",
+          "tile": {
+            "x": -1,
+            "y": 0
+          }
+        },
+        {
+          "labelHeight": 80,
+          "iconScale": 1,
+          "id": "377cf2e2-fc32-4333-ba26-76cbb5dd3ea7",
+          "tile": {
+            "x": -1,
+            "y": 3
+          }
+        },
+        {
+          "labelHeight": 80,
+          "iconScale": 1,
+          "id": "a75284bb-17a6-42ef-992c-9c215c1839e4",
+          "tile": {
+            "x": 2,
+            "y": 3
+          }
+        },
+        {
+          "labelHeight": 80,
+          "iconScale": 1,
+          "id": "b27b4079-9055-45d2-b098-22d091c24262",
+          "tile": {
+            "x": -1,
+            "y": 6
+          }
+        },
+        {
+          "labelHeight": 80,
+          "iconScale": 1,
+          "id": "dab45cf1-3325-40bb-98c5-1a3d8e4e4e8d",
+          "tile": {
+            "x": 1,
+            "y": 4
+          }
+        },
+        {
+          "labelHeight": 80,
+          "iconScale": 1,
+          "id": "1709e0ed-669f-4853-8574-015827ea904a",
+          "tile": {
+            "x": 1,
+            "y": 7
+          }
+        }
+      ],
+      "connectors": [
+        {
+          "id": "b4188fd8-e9c1-42b1-b3e7-afdc7fc489a8",
+          "color": "blue",
+          "anchors": [
+            {
+              "id": "83a3b944-8346-4290-8230-7fc0a131955b",
+              "ref": {
+                "item": "1709e0ed-669f-4853-8574-015827ea904a"
+              }
+            },
+            {
+              "id": "e80f75cc-3389-4b3e-b5b2-942bc7b51d28",
+              "ref": {
+                "item": "dab45cf1-3325-40bb-98c5-1a3d8e4e4e8d"
+              }
+            }
+          ]
+        }
+      ],
+      "rectangles": [
+        {
+          "id": "d4d3a29b-b9b0-42f7-b46a-b5b9da1475ef",
+          "color": "blue",
+          "from": {
+            "x": 1,
+            "y": 11
+          },
+          "to": {
+            "x": 1,
+            "y": 11
+          }
+        }
+      ],
+      "textBoxes": [],
+      "id": "e1569896-f83a-4345-8654-1352ebdef4b5",
+      "lastUpdated": "2026-01-09T23:50:01.539Z"
+    }
+  ],
+  "fitToView": true,
+  "name": "test2",
+  "id": "1768002615409",
+  "lastModified": "2026-01-09T23:50:29.799Z"
+}
