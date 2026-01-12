@@ -7,6 +7,7 @@ services:
       - "3001:3001"
     volumes:
       - isodiagram-data:/app/data/diagrams
+      - isodiagram-assets:/app/data/assets/download
     environment:
       - BACKEND_PORT=3001
       - ENABLE_SERVER_STORAGE=true
@@ -16,3 +17,4 @@ services:
 
 volumes:
   isodiagram-data:
+  isodiagram-assets:

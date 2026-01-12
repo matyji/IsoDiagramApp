@@ -8,23 +8,19 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "cross-env NODE_ENV=development npm run start --workspace=apps/web",
-    "dev:win": "cross-env NODE_ENV=development npm run start --workspace=apps/web",
-
+    "dev": "npm run dev:full",
+    "dev:full": "concurrently --kill-others \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:win": "npm run dev:full",
     "dev:web": "npm run start --workspace=apps/web",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:lib": "npm run dev --workspace=packages/editor-core",
-
     "build": "npm run build:lib && npm run build:web",
     "build:lib": "npm run build --workspace=packages/editor-core",
     "build:web": "npm run build --workspace=apps/web",
-    
     "start:api": "npm run start --workspace=apps/api",
-
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
-
     "publish:lib": "npm run build:lib && npm publish --workspace=packages/editor-core"
   },
   "devDependencies": {
@@ -34,6 +30,7 @@
     "@types/node": "^18.19.129",
     "@types/react": "^18.3.26",
     "@types/react-dom": "^18.3.7",
+    "concurrently": "^9.2.1",
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "cross-env": "^10.1.0",
     "semantic-release": "^24.2.9",

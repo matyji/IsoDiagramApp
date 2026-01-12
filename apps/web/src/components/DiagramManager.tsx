@@ -163,13 +163,18 @@ export const DiagramManager: React.FC<Props> = ({
       }).length;
       console.log(`DiagramManager: Including ${importedCount} imported icons`);
 
+      let finalId: string;
       if (currentDiagramId) {
+        finalId = currentDiagramId;
         // Update existing
         await storage.saveDiagram(currentDiagramId, dataToSave);
       } else {
         // Create new
-        await storage.createDiagram(dataToSave);
+        finalId = await storage.createDiagram(dataToSave);
       }
+
+      // Update parent state immediately with the data we just saved
+      onLoadDiagram(finalId, dataToSave);
 
       setShowSaveDialog(false);
       setSaveName('');

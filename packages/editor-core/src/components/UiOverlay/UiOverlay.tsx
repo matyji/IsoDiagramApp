@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { Box, useTheme, Typography, Stack } from '@mui/material';
 import { ChevronRight } from '@mui/icons-material';
 import { EditorModeEnum, DialogTypeEnum } from 'src/types';
-import { UiElement } from 'components/UiElement/UiElement';
+import { UiElement } from 'src/components/UiElement/UiElement';
 import { SceneLayer } from 'src/components/SceneLayer/SceneLayer';
 import { DragAndDrop } from 'src/components/DragAndDrop/DragAndDrop';
 import { ItemControlsManager } from 'src/components/ItemControls/ItemControlsManager';
@@ -55,9 +55,20 @@ const getEditorModeMapping = (editorMode: keyof typeof EditorModeEnum) => {
   return availableUiFeatures;
 };
 
+// Internal component to handle mouse tracking during item placement to avoid re-rendering the whole UI
+const PlaceIconOverlay = ({ iconId }: { iconId: string }) => {
+  const tile = useUiStateStore((state) => state.mouse.position.tile);
+
+  return (
+    <SceneLayer disableAnimation>
+      <DragAndDrop iconId={iconId} tile={tile} />
+    </SceneLayer>
+  );
+};
+
 export const UiOverlay = () => {
   const theme = useTheme();
-  const contextMenuAnchorRef = useRef();
+  const contextMenuAnchorRef = useRef<HTMLDivElement>(null);
   const toolMenuRef = useRef<HTMLDivElement>(null);
   const { appPadding } = theme.customVars;
   const spacing = useCallback(
@@ -66,44 +77,25 @@ export const UiOverlay = () => {
     },
     [theme]
   );
-  const uiStateActions = useUiStateStore((state) => {
-    return state.actions;
-  });
-  const enableDebugTools = useUiStateStore((state) => {
-    return state.enableDebugTools;
-  });
-  const mode = useUiStateStore((state) => {
-    return state.mode;
-  });
-  const mouse = useUiStateStore((state) => {
-    return state.mouse;
-  });
-  const dialog = useUiStateStore((state) => {
-    return state.dialog;
-  });
-  const itemControls = useUiStateStore((state) => {
-    return state.itemControls;
-  });
+
+  const uiStateActions = useUiStateStore((state) => state.actions);
+  const enableDebugTools = useUiStateStore((state) => state.enableDebugTools);
+  const mode = useUiStateStore((state) => state.mode);
+  const dialog = useUiStateStore((state) => state.dialog);
+  const itemControls = useUiStateStore((state) => state.itemControls);
+  const editorMode = useUiStateStore((state) => state.editorMode);
+  const rendererEl = useUiStateStore((state) => state.rendererEl);
+  const iconPackManager = useUiStateStore((state) => state.iconPackManager);
+  const appActions = useUiStateStore((state) => state.appActions);
+
+  const title = useModelStore((state) => state.title);
   const { currentView } = useScene();
-  const editorMode = useUiStateStore((state) => {
-    return state.editorMode;
-  });
+
   const availableTools = useMemo(() => {
     return getEditorModeMapping(editorMode);
   }, [editorMode]);
-  const rendererEl = useUiStateStore((state) => {
-    return state.rendererEl;
-  });
-  const title = useModelStore((state) => {
-    return state.title;
-  });
-  const iconPackManager = useUiStateStore((state) => {
-    return state.iconPackManager;
-  });
+
   const { size: rendererSize } = useResizeObserver(rendererEl);
-  const appActions = useUiStateStore((state) => {
-    return state.appActions;
-  });
 
   return (
     <>
@@ -192,7 +184,7 @@ export const UiOverlay = () => {
             style={{
               left: rendererSize.width / 2,
               top: rendererSize.height - appPadding.y * 2,
-              width: rendererSize.width - 500,
+              width: Math.max(0, rendererSize.width - 500),
               height: appPadding.y
             }}
           >
@@ -294,9 +286,7 @@ export const UiOverlay = () => {
       )}
 
       {mode.type === 'PLACE_ICON' && mode.id && (
-        <SceneLayer disableAnimation>
-          <DragAndDrop iconId={mode.id} tile={mouse.position.tile} />
-        </SceneLayer>
+        <PlaceIconOverlay iconId={mode.id} />
       )}
 
       {dialog === DialogTypeEnum.EXPORT_IMAGE && (
@@ -323,7 +313,7 @@ export const UiOverlay = () => {
 
       <SceneLayer>
         <Box ref={contextMenuAnchorRef} />
-        <ContextMenuManager anchorEl={contextMenuAnchorRef.current} />
+        <ContextMenuManager anchorEl={contextMenuAnchorRef.current || undefined} />
       </SceneLayer>
     </>
   );

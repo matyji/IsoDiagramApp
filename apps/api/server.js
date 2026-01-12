@@ -1,32 +1,57 @@
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs/promises';
+import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import puppeteer from 'puppeteer';
+import multer from 'multer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const envPath = path.join(__dirname, '.env');
 
-// Load environment variables from the same directory as server.js
-console.log(`Loading environment from: ${envPath}`);
+const envPath = path.join(__dirname, '.env');
+console.log(`[BOOT] Loading environment from: ${envPath}`);
 dotenv.config({ path: envPath });
+
+const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, 'data', 'diagrams');
+const DOWNLOAD_ASSETS_PATH = path.join(__dirname, 'data', 'download');
+const BASE_ASSETS_PATH = path.join(__dirname, 'data', 'assets', 'base');
+
+function ensureDirSync(dir) {
+  if (!existsSync(dir)) {
+    console.log(`[BOOT] Creating directory: ${dir}`);
+    mkdirSync(dir, { recursive: true });
+  }
+}
+
+try {
+  ensureDirSync(DOWNLOAD_ASSETS_PATH);
+  ensureDirSync(BASE_ASSETS_PATH);
+  ensureDirSync(STORAGE_PATH);
+} catch (err) {
+  console.error('[BOOT] Directory creation failed:', err);
+}
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
-
-console.log(`Value of ENABLE_SERVER_STORAGE: ${process.env.ENABLE_SERVER_STORAGE}`);
-
-// Configuration from environment variables
 const STORAGE_ENABLED = process.env.ENABLE_SERVER_STORAGE === 'true';
-const STORAGE_PATH = process.env.STORAGE_PATH || '/data/diagrams';
 const ENABLE_GIT_BACKUP = process.env.ENABLE_GIT_BACKUP === 'true';
+
+console.log(`[BOOT] PORT: ${PORT}`);
+console.log(`[BOOT] STORAGE_ENABLED: ${STORAGE_ENABLED}`);
+console.log(`[BOOT] STORAGE_PATH: ${STORAGE_PATH}`);
 
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+// Simple request logger
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // Health check / Storage status endpoint
 app.get('/api/storage/status', (req, res) => {
@@ -219,14 +244,11 @@ if (STORAGE_ENABLED) {
   });
 
   /**
-   * NEW: Import JSON endpoint
-   * Allows loading a JSON payload and saving it as a new diagram
+   * Import JSON endpoint
    */
   app.post('/api/import', async (req, res) => {
     try {
       const { name, data } = req.body;
-
-      // Use provided data or the whole body if 'data' property is missing
       const diagramContent = data || req.body;
 
       if (!diagramContent || (Array.isArray(diagramContent) && diagramContent.length === 0)) {
@@ -236,7 +258,6 @@ if (STORAGE_ENABLED) {
       const id = `import_${Date.now()}`;
       const filePath = path.join(STORAGE_PATH, `${id}.json`);
 
-      // Ensure basic structure
       const finalData = {
         ...diagramContent,
         id,
@@ -261,27 +282,19 @@ if (STORAGE_ENABLED) {
   });
 
   /**
-   * NEW: Export Image endpoint
-   * Generates an image from a saved diagram ID
-   * NOTE: This is a placeholder structure. Real image generation on server 
-   * requires Puppeteer to render the React application.
+   * Export Image endpoint
    */
   app.get('/api/export/:id', async (req, res) => {
     const { id } = req.params;
-    const format = req.query.format || 'png'; // png (default) or svg (not yet supported)
+    const format = req.query.format || 'png';
     const scale = parseFloat(req.query.scale) || 2;
 
     try {
       const filePath = path.join(STORAGE_PATH, `${id}.json`);
       await fs.access(filePath);
 
-      console.log(`[EXPORT] Generating ${format} for diagram: ${id} (scale: ${scale})`);
-
-      // Dynamic URL - in dev it's 3001, in prod it might be different
-      // Since it's server-side, we use localhost
       const host = process.env.WEB_APP_URL || 'http://localhost:3000';
       const exportUrl = `${host}/display/${id}?export=true`;
-      console.log(`[EXPORT] Loading URL: ${exportUrl}`);
 
       const browser = await puppeteer.launch({
         headless: 'new',
@@ -290,95 +303,83 @@ if (STORAGE_ENABLED) {
 
       try {
         const page = await browser.newPage();
-
-        // Log browser console messages
-        page.on('console', msg => console.log('[BROWSER]', msg.text()));
-
-        await page.setViewport({
-          width: 1920,
-          height: 1080,
-          deviceScaleFactor: scale
-        });
-
-        console.log('[EXPORT] Navigation starting...');
-        const response = await page.goto(exportUrl, {
-          waitUntil: 'load',
-          timeout: 60000
-        });
-
-        if (response) {
-          console.log(`[EXPORT] Navigation finished with status: ${response.status()}`);
-        } else {
-          console.log('[EXPORT] Navigation finished (no response object)');
-        }
-
-        // Wait for the diagram to be loaded and rendered
-        console.log('[EXPORT] Waiting for [data-is-ready="true"]...');
+        await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: scale });
+        await page.goto(exportUrl, { waitUntil: 'load', timeout: 60000 });
         await page.waitForSelector('[data-is-ready="true"]', { timeout: 30000 });
-
-        console.log('[EXPORT] Element found, waiting for final layout/icons...');
         await new Promise(r => setTimeout(r, 3000));
 
         const element = await page.$('[data-is-ready="true"]');
+        if (!element) throw new Error('Diagram container not found');
 
-        if (!element) {
-          throw new Error('Diagram container not found on page after waiting');
-        }
-
-        console.log('[EXPORT] Taking screenshot...');
-        const imageBuffer = await element.screenshot({
-          type: 'png',
-          omitBackground: true
-        });
-
+        const imageBuffer = await element.screenshot({ type: 'png', omitBackground: true });
         await browser.close();
-        console.log('[EXPORT] Export complete!');
 
         res.set('Content-Type', 'image/png');
         res.set('Content-Disposition', `attachment; filename="export-${id}.png"`);
         res.send(imageBuffer);
-
       } catch (err) {
         await browser.close();
         throw err;
       }
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        res.status(404).json({ error: 'Diagram not found for export' });
-      } else {
-        console.error('[EXPORT] Error:', error);
-        res.status(500).json({ error: 'Export failed', details: error.message });
-      }
+      console.error('[EXPORT] Error:', error);
+      res.status(500).json({ error: 'Export failed', details: error.message });
     }
   });
 
-} else {
-  // Storage disabled - return appropriate responses
-  app.get('/api/diagrams', (req, res) => {
-    res.status(503).json({ error: 'Server storage is disabled' });
-  });
-
-  app.get('/api/diagrams/:id', (req, res) => {
-    res.status(503).json({ error: 'Server storage is disabled' });
-  });
-
-  app.put('/api/diagrams/:id', (req, res) => {
-    res.status(503).json({ error: 'Server storage is disabled' });
-  });
-
-  app.delete('/api/diagrams/:id', (req, res) => {
-    res.status(503).json({ error: 'Server storage is disabled' });
-  });
-
-  app.post('/api/diagrams', (req, res) => {
-    res.status(503).json({ error: 'Server storage is disabled' });
-  });
 }
 
+// --- GLOBALLY AVAILABLE ROUTES (Regardless of Storage) ---
+
+// Serve uploaded and base assets
+app.use('/assets/download', express.static(DOWNLOAD_ASSETS_PATH));
+app.use('/assets/base', express.static(BASE_ASSETS_PATH));
+
+/**
+ * Upload Asset endpoint
+ */
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, DOWNLOAD_ASSETS_PATH);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'icon-' + uniqueSuffix + ext);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const fileUrl = `/assets/download/${req.file.filename}`;
+  console.log(`[UPLOAD] Saved ${req.file.originalname} to ${fileUrl}`);
+
+  res.json({
+    success: true,
+    url: fileUrl,
+    filename: req.file.filename
+  });
+});
+
+// --- END GLOBALLY AVAILABLE ROUTES ---
 
 // Serve static files from the built web app
 const webAppPath = path.join(__dirname, '../web/build');
 app.use(express.static(webAppPath));
+
+// Express error handler
+app.use((err, req, res, next) => {
+  console.error('EXPRESS ERROR:', err);
+  res.status(500).json({ error: 'Internal Server Error', details: err.message });
+});
 
 // Catch-all route for SPA
 app.get('*', (req, res, next) => {
@@ -386,7 +387,19 @@ app.get('*', (req, res, next) => {
   if (req.url.startsWith('/api')) {
     return next();
   }
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache')
+  res.set('Expires', '0')
   res.sendFile(path.join(webAppPath, 'index.html'));
+});
+
+// Process error handlers
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION:', reason);
 });
 
 // Start server

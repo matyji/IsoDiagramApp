@@ -3,6 +3,7 @@ import { DiagramData } from '../diagramUtils';
 import { SavedDiagram } from '../types';
 import { storageManager } from '../services/storageService';
 import { IconPackName } from '../services/iconPackManager';
+import { transformIconUrls } from '../utils/iconUtils';
 
 const DEFAULT_COLORS = [
     { id: 'blue', value: '#0066cc' },
@@ -44,7 +45,7 @@ export const useDiagram = ({
                 const importedIcons = (data.icons || []).filter((icon: any) => icon.collection === 'imported');
                 return {
                     ...data,
-                    icons: [...coreIcons, ...importedIcons],
+                    icons: [...transformIconUrls(coreIcons), ...transformIconUrls(importedIcons)],
                     colors: data.colors?.length ? data.colors : DEFAULT_COLORS,
                     fitToView: data.fitToView !== false
                 };
@@ -55,7 +56,7 @@ export const useDiagram = ({
 
         return {
             title: 'Diagramme sans titre',
-            icons: coreIcons,
+            icons: transformIconUrls(coreIcons),
             colors: DEFAULT_COLORS,
             items: [],
             views: [],
@@ -100,98 +101,15 @@ export const useDiagram = ({
 
     // Sync icons
     useEffect(() => {
+        const transformedLoaded = transformIconUrls(iconPackManager.loadedIcons);
         setDiagramData(prev => ({
             ...prev,
             icons: [
-                ...iconPackManager.loadedIcons,
-                ...(prev.icons || []).filter(icon => icon.collection === 'imported')
+                ...transformedLoaded,
+                ...transformIconUrls((prev.icons || []).filter(icon => icon.collection === 'imported'))
             ]
         }));
     }, [iconPackManager.loadedIcons]);
-
-    // Load from local storage
-    useEffect(() => {
-        const saved = localStorage.getItem('fossflow-diagrams');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            setDiagrams(parsed);
-
-            const lastOpenedId = localStorage.getItem('fossflow-last-opened');
-            if (lastOpenedId) {
-                const last = parsed.find((d: SavedDiagram) => d.id === lastOpenedId);
-                if (last) {
-                    setCurrentDiagram(last);
-                    setDiagramName(last.name);
-                    setCurrentModel(diagramData);
-                }
-            }
-        }
-    }, []);
-
-    // Persist to local storage
-    useEffect(() => {
-        try {
-            const diagramsToStore = diagrams.map(d => ({
-                ...d,
-                data: { ...d.data, icons: [] }
-            }));
-            localStorage.setItem('fossflow-diagrams', JSON.stringify(diagramsToStore));
-        } catch (e) {
-            console.error('Failed to save diagrams:', e);
-        }
-    }, [diagrams]);
-
-    const saveDiagram = useCallback(() => {
-        if (!diagramName.trim()) {
-            alert('Veuillez entrer un nom pour le diagramme');
-            return;
-        }
-
-        const existingDiagram = diagrams.find(d => d.name === diagramName.trim() && d.id !== currentDiagram?.id);
-        if (existingDiagram) {
-            if (!window.confirm(`Un diagramme nommé "${diagramName}" existe déjà dans cette session. Cela l'écrasera. Êtes-vous sûr de vouloir continuer ?`)) return;
-        }
-
-        const importedIcons = (currentModel?.icons || diagramData.icons || [])
-            .filter(icon => icon.collection === 'imported');
-
-        const savedData: DiagramData = {
-            title: diagramName,
-            icons: importedIcons,
-            colors: currentModel?.colors || diagramData.colors || [],
-            items: currentModel?.items || diagramData.items || [],
-            views: currentModel?.views || diagramData.views || [],
-            fitToView: true
-        };
-
-        const newDiagram: SavedDiagram = {
-            id: currentDiagram?.id || Date.now().toString(),
-            name: diagramName,
-            data: savedData,
-            createdAt: currentDiagram?.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-
-        setDiagrams(prev => {
-            if (currentDiagram) {
-                return prev.map(d => d.id === currentDiagram.id ? newDiagram : d);
-            } else if (existingDiagram) {
-                return prev.map(d => d.id === existingDiagram.id ? { ...newDiagram, id: existingDiagram.id, createdAt: existingDiagram.createdAt } : d);
-            }
-            return [...prev, newDiagram];
-        });
-
-        setCurrentDiagram(newDiagram);
-        setHasUnsavedChanges(false);
-        setLastAutoSave(new Date());
-
-        try {
-            localStorage.setItem('fossflow-last-opened', newDiagram.id);
-            localStorage.setItem('fossflow-last-opened-data', JSON.stringify(newDiagram.data));
-        } catch (e) {
-            console.error('Failed to save diagram:', e);
-        }
-    }, [diagramName, diagrams, currentDiagram, currentModel, diagramData]);
 
     const loadDiagram = useCallback(async (diagram: SavedDiagram, skipUnsavedCheck = false) => {
         if (!skipUnsavedCheck && hasUnsavedChanges && !window.confirm('Vous avez des modifications non enregistrées. Continuer le chargement ?')) return;
@@ -199,7 +117,7 @@ export const useDiagram = ({
         await iconPackManager.loadPacksForDiagram(diagram.data.items || []);
 
         const importedIcons = (diagram.data.icons || []).filter((icon: any) => icon.collection === 'imported');
-        const mergedIcons = [...iconPackManager.loadedIcons, ...importedIcons];
+        const mergedIcons = [...transformIconUrls(iconPackManager.loadedIcons), ...transformIconUrls(importedIcons)];
         const dataWithIcons = { ...diagram.data, icons: mergedIcons };
 
         setCurrentDiagram(diagram);
@@ -217,12 +135,145 @@ export const useDiagram = ({
         }
     }, [hasUnsavedChanges, iconPackManager]);
 
-    const deleteDiagram = useCallback((id: string) => {
+    // Unified list loading
+    const refreshDiagramList = useCallback(async () => {
+        try {
+            const storage = storageManager.getStorage();
+            const list = await storage.listDiagrams();
+
+            // Map DiagramInfo to SavedDiagram structure
+            const mappedList: SavedDiagram[] = list.map(item => ({
+                id: item.id,
+                name: item.name,
+                data: (item as any).data || { items: [], icons: [], views: [] },
+                createdAt: (item as any).createdAt || item.lastModified.toISOString(),
+                updatedAt: item.lastModified.toISOString()
+            }));
+
+            setDiagrams(mappedList);
+
+            const lastOpenedId = localStorage.getItem('fossflow-last-opened');
+            if (lastOpenedId && !currentDiagram) {
+                const last = mappedList.find(d => d.id === lastOpenedId);
+                if (last) {
+                    await loadDiagram(last, true);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load diagram list:', e);
+        }
+    }, [currentDiagram, loadDiagram]);
+
+    const storageInitialized = useRef(false);
+
+    // Initialize storage and load list
+    useEffect(() => {
+        if (storageInitialized.current) return;
+        storageInitialized.current = true;
+
+        storageManager.initialize()
+            .then(() => {
+                setServerStorageAvailable(storageManager.isServerStorage());
+                refreshDiagramList();
+            })
+            .catch(console.error);
+    }, [refreshDiagramList]);
+
+    // Persist list to local storage only if NOT using server
+    useEffect(() => {
+        if (serverStorageAvailable) return;
+
+        try {
+            const diagramsToStore = diagrams.map(d => ({
+                ...d,
+                data: { ...d.data, icons: [] }
+            }));
+            localStorage.setItem('fossflow-diagrams', JSON.stringify(diagramsToStore));
+        } catch (e) {
+            console.error('Failed to save diagrams to local storage:', e);
+        }
+    }, [diagrams, serverStorageAvailable]);
+
+    const saveDiagram = useCallback(async () => {
+        if (!diagramName.trim()) {
+            alert('Veuillez entrer un nom pour le diagramme');
+            return;
+        }
+
+        const storage = storageManager.getStorage();
+        const existingDiagram = diagrams.find(d => d.name === diagramName.trim() && d.id !== currentDiagram?.id);
+
+        if (existingDiagram) {
+            if (!window.confirm(`Un diagramme nommé "${diagramName}" existe déjà. Cela l'écrasera. Êtes-vous sûr de vouloir continuer ?`)) return;
+        }
+
+        const importedIcons = (currentModel?.icons || diagramData.icons || [])
+            .filter(icon => icon.collection === 'imported');
+
+        const savedData: DiagramData = {
+            title: diagramName,
+            icons: importedIcons,
+            colors: currentModel?.colors || diagramData.colors || [],
+            items: currentModel?.items || diagramData.items || [],
+            views: currentModel?.views || diagramData.views || [],
+            fitToView: true
+        };
+
+        try {
+            let finalId = currentDiagram?.id;
+
+            if (finalId) {
+                await storage.saveDiagram(finalId, savedData);
+            } else {
+                finalId = await storage.createDiagram(savedData);
+            }
+
+            const newDiagram: SavedDiagram = {
+                id: finalId,
+                name: diagramName,
+                data: savedData,
+                createdAt: currentDiagram?.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            setDiagrams(prev => {
+                if (currentDiagram) {
+                    return prev.map(d => d.id === currentDiagram.id ? newDiagram : d);
+                } else if (existingDiagram) {
+                    return prev.map(d => d.id === existingDiagram.id ? { ...newDiagram, id: existingDiagram.id, createdAt: existingDiagram.createdAt } : d);
+                }
+                return [...prev, newDiagram];
+            });
+
+            setCurrentDiagram(newDiagram);
+            setHasUnsavedChanges(false);
+            setLastAutoSave(new Date());
+
+            localStorage.setItem('fossflow-last-opened', newDiagram.id);
+            localStorage.setItem('fossflow-last-opened-data', JSON.stringify(newDiagram.data));
+
+            console.log(`Saved to ${storageManager.isServerStorage() ? 'server' : 'local storage'}`);
+        } catch (e) {
+            console.error('Failed to save diagram:', e);
+            alert('Échec de la sauvegarde');
+        }
+    }, [diagramName, diagrams, currentDiagram, currentModel, diagramData]);
+
+
+    const deleteDiagram = useCallback(async (id: string) => {
         if (window.confirm('Êtes-vous sûr de vouloir supprimer ce diagramme ?')) {
-            setDiagrams(prev => prev.filter(d => d.id !== id));
-            if (currentDiagram?.id === id) {
-                setCurrentDiagram(null);
-                setDiagramName('');
+            try {
+                const storage = storageManager.getStorage();
+                await storage.deleteDiagram(id);
+
+                setDiagrams(prev => prev.filter(d => d.id !== id));
+                if (currentDiagram?.id === id) {
+                    setCurrentDiagram(null);
+                    setDiagramName('');
+                }
+            } catch (e) {
+                console.error('Failed to delete diagram:', e);
+                alert('Échec de la suppression');
             }
         }
     }, [currentDiagram]);
@@ -304,10 +355,10 @@ export const useDiagram = ({
         );
 
         if (hasDefaultIcons) {
-            finalIcons = loadedIcons;
+            finalIcons = transformIconUrls(loadedIcons);
         } else {
             const importedIcons = loadedIcons.filter((icon: any) => icon.collection === 'imported');
-            finalIcons = [...iconPackManager.loadedIcons, ...importedIcons];
+            finalIcons = [...transformIconUrls(iconPackManager.loadedIcons), ...transformIconUrls(importedIcons)];
         }
 
         const mergedData: DiagramData = {

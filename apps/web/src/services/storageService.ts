@@ -26,9 +26,12 @@ class ServerStorage implements StorageService {
   constructor(baseUrl: string = '') {
     // In production (Docker), use relative paths (nginx proxy)
     // In development, use localhost:3001
-    const isDevelopment = window.location.hostname === 'localhost' &&
-      (window.location.port === '3000' || window.location.port === '3001');
-    this.baseUrl = baseUrl || (isDevelopment ? 'http://localhost:5000' : '');
+    // Base URL is empty by default to use relative paths (works with proxy in dev and same-domain in prod)
+    this.baseUrl = baseUrl || '';
+  }
+
+  getBaseUrl() {
+    return this.baseUrl;
   }
 
   async isAvailable(): Promise<boolean> {
@@ -145,61 +148,75 @@ class ServerStorage implements StorageService {
   }
 }
 
-// Session Storage Implementation (existing functionality)
-class SessionStorage implements StorageService {
-  private readonly KEY_PREFIX = 'fossflow_diagram_';
-  private readonly LIST_KEY = 'fossflow_diagrams';
+// Local Storage Implementation (renamed from SessionStorage for clarity)
+class LocalStorageProvider implements StorageService {
+  private readonly KEY_PREFIX = 'fossflow-diagram-';
+  private readonly LIST_KEY = 'fossflow-diagrams';
 
   async isAvailable(): Promise<boolean> {
-    return true; // Session storage is always available
+    return true;
   }
 
   async listDiagrams(): Promise<DiagramInfo[]> {
-    const listStr = sessionStorage.getItem(this.LIST_KEY);
+    const listStr = localStorage.getItem(this.LIST_KEY);
     if (!listStr) return [];
 
     const list = JSON.parse(listStr);
     return list.map((item: any) => ({
       ...item,
-      lastModified: new Date(item.lastModified)
+      lastModified: new Date(item.lastModified || item.updatedAt || Date.now())
     }));
   }
 
   async loadDiagram(id: string): Promise<Model> {
-    const data = sessionStorage.getItem(`${this.KEY_PREFIX}${id}`);
-    if (!data) throw new Error('Diagram not found');
-    return JSON.parse(data);
+    // Try separate key first
+    const data = localStorage.getItem(`${this.KEY_PREFIX}${id}`);
+    if (data) return JSON.parse(data);
+
+    // Fallback to searching in the main list (for older data structure)
+    const listStr = localStorage.getItem(this.LIST_KEY);
+    if (listStr) {
+      const list = JSON.parse(listStr);
+      const diagram = list.find((d: any) => d.id === id);
+      if (diagram && diagram.data) return diagram.data;
+    }
+
+    throw new Error('Diagram not found');
   }
 
   async saveDiagram(id: string, data: Model): Promise<void> {
-    sessionStorage.setItem(`${this.KEY_PREFIX}${id}`, JSON.stringify(data));
+    localStorage.setItem(`${this.KEY_PREFIX}${id}`, JSON.stringify(data));
 
     // Update list
-    const list = await this.listDiagrams();
-    const existing = list.findIndex(d => d.id === id);
+    const listStr = localStorage.getItem(this.LIST_KEY);
+    const list = listStr ? JSON.parse(listStr) : [];
+    const existing = list.findIndex((d: any) => d.id === id);
     const info: DiagramInfo = {
       id,
-      name: (data as any).name || 'Untitled Diagram',
+      name: (data as any).title || (data as any).name || 'Untitled Diagram',
       lastModified: new Date(),
       size: JSON.stringify(data).length
     };
 
     if (existing >= 0) {
-      list[existing] = info;
+      list[existing] = { ...list[existing], ...info };
     } else {
       list.push(info);
     }
 
-    sessionStorage.setItem(this.LIST_KEY, JSON.stringify(list));
+    localStorage.setItem(this.LIST_KEY, JSON.stringify(list));
   }
 
   async deleteDiagram(id: string): Promise<void> {
-    sessionStorage.removeItem(`${this.KEY_PREFIX}${id}`);
+    localStorage.removeItem(`${this.KEY_PREFIX}${id}`);
 
     // Update list
-    const list = await this.listDiagrams();
-    const filtered = list.filter(d => d.id !== id);
-    sessionStorage.setItem(this.LIST_KEY, JSON.stringify(filtered));
+    const listStr = localStorage.getItem(this.LIST_KEY);
+    if (listStr) {
+      const list = JSON.parse(listStr);
+      const filtered = list.filter((d: any) => d.id !== id);
+      localStorage.setItem(this.LIST_KEY, JSON.stringify(filtered));
+    }
   }
 
   async createDiagram(data: Model): Promise<string> {
@@ -212,12 +229,12 @@ class SessionStorage implements StorageService {
 // Storage Manager - decides which storage to use
 class StorageManager {
   private serverStorage: ServerStorage;
-  private sessionStorage: SessionStorage;
+  private localStorageProvider: LocalStorageProvider;
   private activeStorage: StorageService | null = null;
 
   constructor() {
     this.serverStorage = new ServerStorage();
-    this.sessionStorage = new SessionStorage();
+    this.localStorageProvider = new LocalStorageProvider();
   }
 
   async initialize(): Promise<StorageService> {
@@ -226,8 +243,8 @@ class StorageManager {
       console.log('Using server storage');
       this.activeStorage = this.serverStorage;
     } else {
-      console.log('Using session storage');
-      this.activeStorage = this.sessionStorage;
+      console.log('Using local storage');
+      this.activeStorage = this.localStorageProvider;
     }
     return this.activeStorage;
   }
@@ -241,6 +258,10 @@ class StorageManager {
 
   isServerStorage(): boolean {
     return this.activeStorage === this.serverStorage;
+  }
+
+  getApiUrl(): string {
+    return this.serverStorage.getBaseUrl();
   }
 }
 

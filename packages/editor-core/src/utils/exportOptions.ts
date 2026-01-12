@@ -90,7 +90,7 @@ export const transformFromCompactFormat = (compactModel: any): Model => {
   const fullIcons = Array.from(iconSet).map(iconName => {
     // Find the icon in the available icons library
     const existingIcon = availableIcons.find(icon => icon.id === iconName || icon.name === iconName);
-    
+
     if (existingIcon) {
       // Use the existing icon data with proper URL
       return {

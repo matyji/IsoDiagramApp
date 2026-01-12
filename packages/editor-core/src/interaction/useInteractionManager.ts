@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useModelStore } from 'src/stores/modelStore';
-import { useUiStateStore } from 'src/stores/uiStateStore';
+import { useModelStore, useModelStoreApi } from 'src/stores/modelStore';
+import { useUiStateStore, useUiStateStoreApi } from 'src/stores/uiStateStore';
 import { ModeActions, State, SlimMouseEvent } from 'src/types';
 import { DialogTypeEnum } from 'src/types/ui';
 import { getMouse, getItemAtTile, generateId, incrementZoom, decrementZoom } from 'src/utils';
@@ -50,46 +50,53 @@ const getModeFunction = (mode: ModeActions, e: SlimMouseEvent) => {
 export const useInteractionManager = () => {
   const rendererRef = useRef<HTMLElement>();
   const reducerTypeRef = useRef<string>();
-  const uiState = useUiStateStore((state) => {
-    return state;
-  });
-  const model = useModelStore((state) => {
-    return state;
-  });
+  const uiStateApi = useUiStateStoreApi();
+  const modelApi = useModelStoreApi();
+
+  const hotkeyProfile = useUiStateStore((state) => state.hotkeyProfile);
+  const editorMode = useUiStateStore((state) => state.editorMode);
+  const modeType = useUiStateStore((state) => state.mode.type);
+  const rendererEl = useUiStateStore((state) => state.rendererEl);
+  const zoomSettings = useUiStateStore((state) => state.zoomSettings);
+  const itemControls = useUiStateStore((state) => state.itemControls);
+  const connectorInteractionMode = useUiStateStore((state) => state.connectorInteractionMode);
+
   const scene = useScene();
-  const { size: rendererSize } = useResizeObserver(uiState.rendererEl);
+  const { size: rendererSize } = useResizeObserver(rendererEl);
   const { undo, redo, canUndo, canRedo } = useHistory();
-  const { createTextBox } = scene;
+  const { createTextBox, deleteConnector } = scene;
   const { handleMouseDown: handlePanMouseDown, handleMouseUp: handlePanMouseUp } = usePanHandlers();
 
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const currentUiState = uiStateApi.getState();
+
       // ESC key handling - should work even in input fields
       if (e.key === 'Escape') {
         e.preventDefault();
 
         // Priority 1: Close ItemControls (node menus) if open
-        if (uiState.itemControls) {
-          uiState.actions.setItemControls(null);
+        if (currentUiState.itemControls) {
+          currentUiState.actions.setItemControls(null);
           return;
         }
 
         // Priority 2: Cancel in-progress connector
-        if (uiState.mode.type === 'CONNECTOR') {
-          const connectorMode = uiState.mode;
+        if (currentUiState.mode.type === 'CONNECTOR') {
+          const connectorMode = currentUiState.mode;
 
           // Check if connection is in progress
           const isConnectionInProgress =
-            (uiState.connectorInteractionMode === 'click' && connectorMode.isConnecting) ||
-            (uiState.connectorInteractionMode === 'drag' && connectorMode.id !== null);
+            (currentUiState.connectorInteractionMode === 'click' && connectorMode.isConnecting) ||
+            (currentUiState.connectorInteractionMode === 'drag' && connectorMode.id !== null);
 
           if (isConnectionInProgress && connectorMode.id) {
             // Delete the temporary connector
-            scene.deleteConnector(connectorMode.id);
+            deleteConnector(connectorMode.id);
 
             // Reset connector mode to initial state
-            uiState.actions.setMode({
+            currentUiState.actions.setMode({
               type: 'CONNECTOR',
               showCursor: true,
               id: null,
@@ -138,15 +145,15 @@ export const useInteractionManager = () => {
       // Help dialog shortcut
       if (e.key === 'F1') {
         e.preventDefault();
-        uiState.actions.setDialog(DialogTypeEnum.HELP);
+        currentUiState.actions.setDialog(DialogTypeEnum.HELP);
       }
 
       // Tool hotkeys
-      const hotkeyMapping = HOTKEY_PROFILES[uiState.hotkeyProfile];
+      const hotkeyMapping = HOTKEY_PROFILES[currentUiState.hotkeyProfile];
       const key = e.key.toLowerCase();
 
       // Quick icon selection for selected node (when ItemControls is an ItemReference with type 'ITEM')
-      if (key === 'i' && uiState.itemControls && 'id' in uiState.itemControls && uiState.itemControls.type === 'ITEM') {
+      if (key === 'i' && currentUiState.itemControls && 'id' in currentUiState.itemControls && currentUiState.itemControls.type === 'ITEM') {
         e.preventDefault();
         // Trigger icon change mode
         const event = new CustomEvent('quickIconChange');
@@ -156,38 +163,38 @@ export const useInteractionManager = () => {
       // Check if key matches any hotkey
       if (hotkeyMapping.select && key === hotkeyMapping.select) {
         e.preventDefault();
-        uiState.actions.setMode({
+        currentUiState.actions.setMode({
           type: 'CURSOR',
           showCursor: true,
           mousedownItem: null
         });
       } else if (hotkeyMapping.pan && key === hotkeyMapping.pan) {
         e.preventDefault();
-        uiState.actions.setMode({
+        currentUiState.actions.setMode({
           type: 'PAN',
           showCursor: false
         });
-        uiState.actions.setItemControls(null);
+        currentUiState.actions.setItemControls(null);
       } else if (hotkeyMapping.addItem && key === hotkeyMapping.addItem) {
         e.preventDefault();
-        uiState.actions.setItemControls({
+        currentUiState.actions.setItemControls({
           type: 'ADD_ITEM'
         });
-        uiState.actions.setMode({
+        currentUiState.actions.setMode({
           type: 'PLACE_ICON',
           showCursor: true,
           id: null
         });
       } else if (hotkeyMapping.rectangle && key === hotkeyMapping.rectangle) {
         e.preventDefault();
-        uiState.actions.setMode({
+        currentUiState.actions.setMode({
           type: 'RECTANGLE.DRAW',
           showCursor: true,
           id: null
         });
       } else if (hotkeyMapping.connector && key === hotkeyMapping.connector) {
         e.preventDefault();
-        uiState.actions.setMode({
+        currentUiState.actions.setMode({
           type: 'CONNECTOR',
           id: null,
           showCursor: true
@@ -198,16 +205,16 @@ export const useInteractionManager = () => {
         createTextBox({
           ...TEXTBOX_DEFAULTS,
           id: textBoxId,
-          tile: uiState.mouse.position.tile
+          tile: currentUiState.mouse.position.tile
         });
-        uiState.actions.setMode({
+        currentUiState.actions.setMode({
           type: 'TEXTBOX',
           showCursor: false,
           id: textBoxId
         });
       } else if (hotkeyMapping.lasso && key === hotkeyMapping.lasso) {
         e.preventDefault();
-        uiState.actions.setMode({
+        currentUiState.actions.setMode({
           type: 'LASSO',
           showCursor: true,
           selection: null,
@@ -215,7 +222,7 @@ export const useInteractionManager = () => {
         });
       } else if (hotkeyMapping.freehandLasso && key === hotkeyMapping.freehandLasso) {
         e.preventDefault();
-        uiState.actions.setMode({
+        currentUiState.actions.setMode({
           type: 'FREEHAND_LASSO',
           showCursor: true,
           path: [],
@@ -229,11 +236,14 @@ export const useInteractionManager = () => {
     return () => {
       return window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [undo, redo, canUndo, canRedo, uiState.hotkeyProfile, uiState.actions, createTextBox, uiState.mouse.position.tile, scene, uiState.itemControls, uiState.mode, uiState.connectorInteractionMode]);
+  }, [undo, redo, canUndo, canRedo, deleteConnector, createTextBox, uiStateApi]);
 
   const onMouseEvent = useCallback(
     (e: SlimMouseEvent) => {
       if (!rendererRef.current) return;
+
+      const currentUiState = uiStateApi.getState();
+      const currentModel = modelApi.getState();
 
       // Check pan handlers first
       if (e.type === 'mousedown' && handlePanMouseDown(e)) {
@@ -251,32 +261,32 @@ export const useInteractionManager = () => {
         return;
       }
 
-      const mode = modes[uiState.mode.type];
+      const mode = modes[currentUiState.mode.type];
       const modeFunction = getModeFunction(mode, e);
 
       if (!modeFunction) return;
 
       const nextMouse = getMouse({
         interactiveElement: rendererRef.current,
-        zoom: uiState.zoom,
-        scroll: uiState.scroll,
-        lastMouse: uiState.mouse,
+        zoom: currentUiState.zoom,
+        scroll: currentUiState.scroll,
+        lastMouse: currentUiState.mouse,
         mouseEvent: e,
         rendererSize
       });
 
-      uiState.actions.setMouse(nextMouse);
+      currentUiState.actions.setMouse(nextMouse);
 
       const baseState: State = {
-        model,
+        model: currentModel,
         scene,
-        uiState,
+        uiState: currentUiState,
         rendererRef: rendererRef.current,
         rendererSize,
         isRendererInteraction
       };
 
-      if (reducerTypeRef.current !== uiState.mode.type) {
+      if (reducerTypeRef.current !== currentUiState.mode.type) {
         const prevReducer = reducerTypeRef.current
           ? modes[reducerTypeRef.current]
           : null;
@@ -291,43 +301,46 @@ export const useInteractionManager = () => {
       }
 
       modeFunction(baseState);
-      reducerTypeRef.current = uiState.mode.type;
+      reducerTypeRef.current = currentUiState.mode.type;
     },
-    [model, scene, uiState, rendererSize, handlePanMouseDown, handlePanMouseUp]
+    [uiStateApi, modelApi, scene, rendererSize, handlePanMouseDown, handlePanMouseUp]
   );
 
   const onContextMenu = useCallback(
     (e: SlimMouseEvent) => {
       e.preventDefault();
 
+      const currentUiState = uiStateApi.getState();
+
       // Don't show context menu if right-click pan is enabled
-      if (uiState.panSettings.rightClickPan) {
+      if (currentUiState.panSettings.rightClickPan) {
         return;
       }
 
       const itemAtTile = getItemAtTile({
-        tile: uiState.mouse.position.tile,
+        tile: currentUiState.mouse.position.tile,
         scene
       });
 
       if (itemAtTile) {
-        uiState.actions.setContextMenu({
+        currentUiState.actions.setContextMenu({
           type: 'ITEM',
           item: itemAtTile,
-          tile: uiState.mouse.position.tile
+          tile: currentUiState.mouse.position.tile
         });
       } else {
-        uiState.actions.setContextMenu({
+        currentUiState.actions.setContextMenu({
           type: 'EMPTY',
-          tile: uiState.mouse.position.tile
+          tile: currentUiState.mouse.position.tile
         });
       }
     },
-    [uiState.mouse, scene, uiState.actions, uiState.panSettings]
+    [uiStateApi, scene]
   );
 
   useEffect(() => {
-    if (uiState.mode.type === 'INTERACTIONS_DISABLED') return;
+    const currentUiState = uiStateApi.getState();
+    if (currentUiState.mode.type === 'INTERACTIONS_DISABLED') return;
 
     const el = window;
 
@@ -338,7 +351,7 @@ export const useInteractionManager = () => {
         clientY: Math.floor(e.touches[0].clientY),
         type: 'mousedown',
         button: 0
-      });
+      } as unknown as SlimMouseEvent);
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -348,7 +361,7 @@ export const useInteractionManager = () => {
         clientY: Math.floor(e.touches[0].clientY),
         type: 'mousemove',
         button: 0
-      });
+      } as unknown as SlimMouseEvent);
     };
 
     const onTouchEnd = (e: TouchEvent) => {
@@ -358,12 +371,13 @@ export const useInteractionManager = () => {
         clientY: 0,
         type: 'mouseup',
         button: 0
-      });
+      } as unknown as SlimMouseEvent);
     };
 
     const onScroll = (e: WheelEvent) => {
-      const zoomToCursor = uiState.zoomSettings.zoomToCursor;
-      const oldZoom = uiState.zoom;
+      const state = uiStateApi.getState();
+      const zoomToCursor = state.zoomSettings.zoomToCursor;
+      const oldZoom = state.zoom;
 
       // Calculate new zoom level
       let newZoom: number;
@@ -389,29 +403,25 @@ export const useInteractionManager = () => {
         const mouseRelativeToCenterY = mouseY - rendererSize.height / 2;
 
         // The point under the cursor in world space (before zoom)
-        // World coordinates = (screen coordinates - scroll offset) / zoom
-        const worldX = (mouseRelativeToCenterX - uiState.scroll.position.x) / oldZoom;
-        const worldY = (mouseRelativeToCenterY - uiState.scroll.position.y) / oldZoom;
+        const worldX = (mouseRelativeToCenterX - state.scroll.position.x) / oldZoom;
+        const worldY = (mouseRelativeToCenterY - state.scroll.position.y) / oldZoom;
 
         // After zooming, to keep the same world point under the cursor:
-        // screen coordinates = world coordinates * newZoom + scroll offset
-        // We want: mouseRelativeToCenterX = worldX * newZoom + newScrollX
-        // Therefore: newScrollX = mouseRelativeToCenterX - worldX * newZoom
         const newScrollX = mouseRelativeToCenterX - worldX * newZoom;
         const newScrollY = mouseRelativeToCenterY - worldY * newZoom;
 
         // Apply zoom and adjusted scroll together
-        uiState.actions.setZoom(newZoom);
-        uiState.actions.setScroll({
+        state.actions.setZoom(newZoom);
+        state.actions.setScroll({
           position: {
             x: newScrollX,
             y: newScrollY
           },
-          offset: uiState.scroll.offset
+          offset: state.scroll.offset
         });
       } else {
         // Original behavior: zoom to center
-        uiState.actions.setZoom(newZoom);
+        state.actions.setZoom(newZoom);
       }
     };
 
@@ -422,7 +432,7 @@ export const useInteractionManager = () => {
     el.addEventListener('touchstart', onTouchStart);
     el.addEventListener('touchmove', onTouchMove);
     el.addEventListener('touchend', onTouchEnd);
-    uiState.rendererEl?.addEventListener('wheel', onScroll, { passive: true });
+    currentUiState.rendererEl?.addEventListener('wheel', onScroll, { passive: true });
 
     return () => {
       el.removeEventListener('mousemove', onMouseEvent);
@@ -432,18 +442,12 @@ export const useInteractionManager = () => {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
-      uiState.rendererEl?.removeEventListener('wheel', onScroll);
+      currentUiState.rendererEl?.removeEventListener('wheel', onScroll);
     };
   }, [
-    uiState.editorMode,
     onMouseEvent,
-    uiState.mode.type,
     onContextMenu,
-    uiState.actions,
-    uiState.rendererEl,
-    uiState.zoom,
-    uiState.scroll,
-    uiState.zoomSettings,
+    uiStateApi,
     rendererSize
   ]);
 

@@ -7,7 +7,7 @@ import { useTranslation } from 'src/stores/localeStore';
 const STORAGE_KEY = 'fossflow_lasso_hint_dismissed';
 
 interface Props {
-  toolMenuRef?: React.RefObject<HTMLElement>;
+  toolMenuRef?: React.RefObject<any>;
 }
 
 export const LassoHintTooltip = ({ toolMenuRef }: Props) => {
@@ -27,21 +27,32 @@ export const LassoHintTooltip = ({ toolMenuRef }: Props) => {
 
   useEffect(() => {
     // Calculate position based on toolbar
-    if (toolMenuRef?.current) {
-      const toolMenuRect = toolMenuRef.current.getBoundingClientRect();
-      // Position tooltip below the toolbar with some spacing
-      setPosition({
-        top: toolMenuRect.bottom + 16,
-        right: 16
-      });
-    } else {
-      // Fallback position if no toolbar ref
-      const appPadding = theme.customVars?.appPadding || { x: 16, y: 16 };
-      setPosition({
-        top: appPadding.y + 500, // Approximate toolbar height
-        right: appPadding.x
-      });
-    }
+    const calculatePosition = () => {
+      if (toolMenuRef?.current) {
+        const toolMenuRect = toolMenuRef.current.getBoundingClientRect();
+        return {
+          top: toolMenuRect.bottom + 16,
+          right: 16
+        };
+      } else {
+        // Fallback position if no toolbar ref
+        const appPadding = theme.customVars?.appPadding || { x: 16, y: 16 };
+        return {
+          top: appPadding.y + 500, // Approximate toolbar height
+          right: appPadding.x
+        };
+      }
+    };
+
+    const newPosition = calculatePosition();
+
+    // Only update state if position actually changed to avoid render loops
+    setPosition((prev) => {
+      if (prev.top === newPosition.top && prev.right === newPosition.right) {
+        return prev;
+      }
+      return newPosition;
+    });
   }, [toolMenuRef, theme]);
 
   const handleDismiss = () => {

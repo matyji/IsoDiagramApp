@@ -65,7 +65,7 @@ export const IconSelectionControls = () => {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      
+
       // Check if file is an image
       if (!file.type.startsWith('image/')) {
         console.warn(`Skipping non-image file: ${file.name}`);
@@ -76,82 +76,49 @@ export const IconSelectionControls = () => {
       let baseName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
       let finalName = baseName;
       let counter = 1;
-      
+
       while (existingNames.has(finalName.toLowerCase())) {
         finalName = `${baseName}_${counter}`;
         counter++;
       }
-      
+
       existingNames.add(finalName.toLowerCase());
 
-      // Load and scale the image
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const originalDataUrl = e.target?.result as string;
-          
-          // For SVG files, use as-is since they scale naturally
-          if (file.type === 'image/svg+xml') {
-            resolve(originalDataUrl);
-            return;
-          }
-          
-          // For raster images, scale them to fit in a square bounding box
-          const img = new Image();
-          img.onload = () => {
-            // Create canvas for scaling
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              resolve(originalDataUrl); // Fallback to original
-              return;
-            }
-            
-            // Use a square target size for consistent display
-            // This ensures all icons have the same bounding box
-            const TARGET_SIZE = 128; // Square size for consistency
-            
-            // Calculate scaling to fit within square while maintaining aspect ratio
-            const basScale = Math.min(TARGET_SIZE / img.width, TARGET_SIZE / img.height);
-            // Apply user's custom scaling
-            const finalScale = basScale * (iconScale / 100);
-            const scaledWidth = img.width * finalScale;
-            const scaledHeight = img.height * finalScale;
-            
-            // Set canvas to square size
-            canvas.width = TARGET_SIZE;
-            canvas.height = TARGET_SIZE;
-            
-            // Clear canvas with transparent background
-            ctx.clearRect(0, 0, TARGET_SIZE, TARGET_SIZE);
-            
-            // Calculate position to center the image in the square
-            const x = (TARGET_SIZE - scaledWidth) / 2;
-            const y = (TARGET_SIZE - scaledHeight) / 2;
-            
-            // Enable image smoothing for better quality
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            
-            // Draw scaled and centered image
-            ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
-            
-            // Convert to data URL (using PNG for transparency)
-            resolve(canvas.toDataURL('image/png'));
-          };
-          img.onerror = () => reject(new Error('Failed to load image'));
-          img.src = originalDataUrl;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Upload to server if possible
+      let iconUrl = '';
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          iconUrl = result.url;
+        } else {
+          throw new Error('Upload failed');
+        }
+      } catch (err) {
+        console.warn('Server upload failed, falling back to Base64:', err);
+        // Fallback to Base64 if server is not available
+        iconUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
 
       newIcons.push({
         id: generateId(),
         name: finalName,
-        url: dataUrl,
+        url: iconUrl,
         collection: 'imported',
-        isIsometric: treatAsIsometric  // Use user's preference
+        isIsometric: treatAsIsometric
       });
     }
 
@@ -159,7 +126,7 @@ export const IconSelectionControls = () => {
       // Add new icons to the model
       const updatedIcons = [...currentIcons, ...newIcons];
       modelActions.set({ icons: updatedIcons });
-      
+
       // Update icon categories to include imported collection
       const hasImported = iconCategoriesState.some(cat => cat.id === 'imported');
       if (!hasImported) {
@@ -220,11 +187,11 @@ export const IconSelectionControls = () => {
       {!filteredIcons && (
         <Icons iconCategories={iconCategories} onMouseDown={onMouseDown} />
       )}
-      
+
       <Section>
-        <Box sx={{ 
-          border: '1px solid #e0e0e0', 
-          borderRadius: 1, 
+        <Box sx={{
+          border: '1px solid #e0e0e0',
+          borderRadius: 1,
           p: 1.5,
           backgroundColor: '#f5f5f5'
         }}>
@@ -255,7 +222,7 @@ export const IconSelectionControls = () => {
             Uncheck for flat icons (logos, UI elements)
           </Typography>
         </Box>
-        
+
         <input
           ref={fileInputRef}
           type="file"
@@ -264,10 +231,10 @@ export const IconSelectionControls = () => {
           style={{ display: 'none' }}
           onChange={handleFileSelect}
         />
-        
+
         {showAlert && (
-          <Alert 
-            severity="info" 
+          <Alert
+            severity="info"
             onClose={dismissAlert}
             sx={{ cursor: 'pointer', mt: 1 }}
           >

@@ -19,6 +19,29 @@ export default defineConfig({
             'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
         },
     },
+    server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:3001',
+                changeOrigin: true,
+                secure: false,
+                timeout: 30000,
+                proxyTimeout: 30000,
+            },
+            '/assets': {
+                target: 'http://localhost:3001',
+                changeOrigin: true,
+                secure: false,
+                timeout: 30000,
+                proxyTimeout: 30000,
+            },
+            '/storage': {
+                target: 'http://localhost:3001',
+                changeOrigin: true,
+                secure: false,
+            },
+        },
+    },
     output: {
         distPath: {
             root: 'build',

@@ -63,6 +63,14 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Install chromium browser binary
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium-browser \
+    && rm -rf /var/lib/apt/lists/* || true
+
+# Create a stable symlink ('/usr/bin/chromium') if distro name it differently
+RUN if [ -f /usr/bin/chromium ] && [ ! -f /usr/bin/chromium-browser ]; then ln -s /usr/bin/chromium-browser /usr/bin/chromium; fi || true
+
 WORKDIR /app
 
 # Copy built assets and necessary files
@@ -71,6 +79,8 @@ COPY --from=build /app/apps/api ./apps/api
 COPY --from=build /app/apps/web/build ./apps/web/build
 COPY --from=build /app/packages/editor-core ./packages/editor-core
 COPY --from=build /app/node_modules ./node_modules
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # Default environment configuration
 ENV NODE_ENV=production
@@ -83,10 +93,10 @@ ENV WEB_APP_URL=http://localhost:3001
 EXPOSE 3001
 
 # Create storage volume directory
-RUN mkdir -p /app/data/diagrams
+RUN mkdir -p /app/data/diagrams /app/data/assets/download
 
 # Define the volume for persistent data
-VOLUME ["/app/data/diagrams"]
+VOLUME ["/app/data/diagrams", "/app/data/assets/download"]
 
 # Start the combined server (API + Static Web)
 CMD ["npm", "run", "start", "--workspace=apps/api"]
