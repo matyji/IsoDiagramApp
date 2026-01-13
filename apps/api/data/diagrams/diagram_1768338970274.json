@@ -293,14 +293,19 @@
   ],
   "items": [
     {
-      "id": "922ec5a9-e8a8-440e-a361-ad1399d6dffe",
+      "id": "f8920430-58b9-444b-876c-30628e6d1dab",
       "name": "Untitled",
-      "icon": "block"
+      "icon": "laptop"
     },
     {
-      "id": "7779cb7a-0867-4d49-bb15-1b8fb41be8b3",
+      "id": "ebad428c-c0f5-401f-912b-8bada6135978",
       "name": "Untitled",
-      "icon": "block"
+      "icon": "storage"
+    },
+    {
+      "id": "7863aa52-59c0-409c-ac18-d663357fdaad",
+      "name": "Untitled",
+      "icon": "switch-module"
     }
   ],
   "views": [
@@ -310,37 +315,64 @@
         {
           "labelHeight": 80,
           "iconScale": 1,
-          "id": "7779cb7a-0867-4d49-bb15-1b8fb41be8b3",
+          "id": "7863aa52-59c0-409c-ac18-d663357fdaad",
           "tile": {
-            "x": 1,
-            "y": -1
+            "x": 4,
+            "y": 7
           }
         },
         {
           "labelHeight": 80,
           "iconScale": 1,
-          "id": "922ec5a9-e8a8-440e-a361-ad1399d6dffe",
+          "id": "ebad428c-c0f5-401f-912b-8bada6135978",
           "tile": {
             "x": 1,
             "y": 5
+          }
+        },
+        {
+          "labelHeight": 80,
+          "iconScale": 1,
+          "id": "f8920430-58b9-444b-876c-30628e6d1dab",
+          "tile": {
+            "x": 1,
+            "y": 8
           }
         }
       ],
       "connectors": [
         {
-          "id": "a688cfd4-26ec-42e4-9eca-294e5f446810",
+          "id": "791c5a86-d414-444e-a472-e973804a53f0",
           "color": "blue",
           "anchors": [
             {
-              "id": "11ec19f8-32c0-488a-a125-b573d28a09e9",
+              "id": "93638d6e-f5fb-43df-8830-ac46cde54ca7",
               "ref": {
-                "item": "922ec5a9-e8a8-440e-a361-ad1399d6dffe"
+                "item": "7863aa52-59c0-409c-ac18-d663357fdaad"
               }
             },
             {
-              "id": "eb5d65c9-c7f7-48fb-94fd-b555d7557618",
+              "id": "91b3b029-9ed2-40ff-82a9-34cb9e51f805",
               "ref": {
-                "item": "7779cb7a-0867-4d49-bb15-1b8fb41be8b3"
+                "item": "ebad428c-c0f5-401f-912b-8bada6135978"
+              }
+            }
+          ]
+        },
+        {
+          "id": "c01f8ade-152c-4a3e-84a2-46a0d95f5d09",
+          "color": "blue",
+          "anchors": [
+            {
+              "id": "dd1e4d0b-89d1-4491-a06f-57130dbc8704",
+              "ref": {
+                "item": "f8920430-58b9-444b-876c-30628e6d1dab"
+              }
+            },
+            {
+              "id": "c30c2b4e-cf60-4e87-b95d-9d60588a9bb6",
+              "ref": {
+                "item": "7863aa52-59c0-409c-ac18-d663357fdaad"
               }
             }
           ]
@@ -348,13 +380,13 @@
       ],
       "rectangles": [],
       "textBoxes": [],
-      "id": "be85d14a-b71d-4b92-be3c-1778e57d29f5",
-      "lastUpdated": "2026-01-09T23:55:10.889Z"
+      "id": "1873c5d7-1a1f-4a58-958e-e27493f9ac88",
+      "lastUpdated": "2026-01-13T21:16:12.387Z"
     }
   ],
   "fitToView": true,
-  "name": "pole",
-  "id": "diagram_1768002923692",
-  "created": "2026-01-09T23:55:23.693Z",
-  "lastModified": "2026-01-09T23:55:23.693Z"
+  "name": "test2",
+  "id": "diagram_1768338970274",
+  "created": "2026-01-13T21:16:10.275Z",
+  "lastModified": "2026-01-13T21:16:10.275Z"
 }

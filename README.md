@@ -10,6 +10,7 @@
 - **🚀 Performance** : Moteur de rendu optimisé pour une manipulation fluide des objets.
 - **🖼️ Export Haute Définition** : Génération d'images PNG via Puppeteer côté serveur (avec support Retina/4K).
 - **📦 Packs d'Icônes Dynamiques** : Chargement paresseux des icônes (AWS, GCP, Azure, Kubernetes, etc.).
+- **☁️ Gestion des Assets** : Import d'images personnalisées stockées sur le serveur.
 - **💾 Stockage Hybride** : Session locale ou persistence sur serveur.
 - **🌍 Internationalisation** : Entièrement traduit en Français.
 
@@ -25,7 +26,8 @@ IsoDiagramApp/
 ├── packages/
 │   └── editor-core/# Bibliothèque Cœur (FossFLOW) - Logique de rendu & Store
 ├── data/
-│   └── diagrams/   # Stockage local des diagrammes JSON (côté API)
+│   ├── diagrams/   # Stockage local des diagrammes JSON (côté API)
+│   └── assets/     # Stockage des icônes uploadées et de base
 └── package.json    # Gestion globale des dépendances & scripts
 ```
 
@@ -44,19 +46,14 @@ npm install
 ```
 
 ### 3. Lancer en Développement
-Ouvrez deux terminaux à la racine :
+Une seule commande pour tout lancer (Frontend + API) :
 
-**Terminal 1 : Frontend**
 ```bash
 npm run dev
 ```
 > Accès : `http://localhost:3000`
 
-**Terminal 2 : API**
-```bash
-npm run dev:api
-```
-> Accès : `http://localhost:5000`
+Le frontend (3000) et l'API (3001) démarrent simultanément.
 
 ---
 
@@ -64,7 +61,7 @@ npm run dev:api
 
 Le serveur API fournit des points d'entrée pour la gestion et l'exportation des diagrammes.
 
-### Point d'entrée de base : `http://localhost:5000`
+### Point d'entrée de base : `http://localhost:3001` (ou via proxy frontend)
 
 | Méthode | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -73,22 +70,22 @@ Le serveur API fournit des points d'entrée pour la gestion et l'exportation des
 | **POST** | `/api/diagrams` | Crée un nouveau diagramme. |
 | **PUT** | `/api/diagrams/:id` | Met à jour ou sauvegarde un diagramme existant. |
 | **DELETE** | `/api/diagrams/:id` | Supprime un diagramme du serveur. |
-| **POST** | `/api/import` | Importe un fichier JSON extérieur. |
+| **POST** | `/api/upload` | **Nouveau** : Upload d'une image/icône (stockage dans `data/assets/download`). |
 | **GET** | `/api/export/:id` | **Export Image** : Capture le diagramme en PNG. |
 
 #### Focus sur l'Export Image (`GET /api/export/:id`)
 Utilise Puppeteer en arrière-plan pour un rendu identique à celui de l'éditeur.
 - **Paramètre optionnel** : `scale` (ex: `?scale=2`) pour doubler la résolution.
-- **Exemple** : `http://localhost:5000/api/export/diagram2?scale=2`
+- **Exemple** : `http://localhost:3000/api/export/diagram2?scale=2`
 
 ---
 
 ## ⚙️ Configuration (.env)
 
-Créez un fichier `.env` dans `apps/api/` :
+Créez un fichier `.env` dans `apps/api/` (optionnel, valeurs par défaut fournies) :
 
 ```env
-BACKEND_PORT=5000
+BACKEND_PORT=3001
 ENABLE_SERVER_STORAGE=true
 STORAGE_PATH=./data/diagrams
 WEB_APP_URL=http://localhost:3000
@@ -104,7 +101,6 @@ Si vous modifiez `packages/editor-core`, vous devez recompiler la bibliothèque 
 npm run build:lib
 ```
 
-
 ---
 
 ## 🐳 Docker
@@ -112,7 +108,7 @@ npm run build:lib
 Vous pouvez lancer l'application complète (Frontend + API) en utilisant Docker.
 
 ### 1. Utilisation de Docker Compose (Recommandé)
-Cela lancera l'application et configurera un volume persistant pour vos diagrammes.
+Cela lancera l'application et configurera un volume persistant pour vos diagrammes et images.
 
 ```bash
 docker-compose up -d
@@ -122,13 +118,14 @@ docker-compose up -d
 ### 2. Construction manuelle de l'image
 ```bash
 docker build -t isodiagram-app .
-docker run -p 3001:3001 -v $(pwd)/data:/app/data/diagrams isodiagram-app
+sudo docker run -p 3001:3001   -v $(pwd)/apps/api/data/diagrams:/app/apps/api/data/diagrams   -v $(pwd)/apps/api/data/download:/app/apps/api/data/assets/download   isodiagram_app
 ```
 
 ### Notes sur Docker :
 - L'image inclut toutes les dépendances nécessaires pour **Puppeteer** (export image).
 - Le serveur API à l'intérieur du container s'occupe de servir les fichiers statiques du Frontend.
 - Les diagrammes sont persistés dans le dossier `/app/data/diagrams` (mappé via le volume).
+- Les images uploadées sont persistées dans `/app/data/assets/download`.
 
 ---
 

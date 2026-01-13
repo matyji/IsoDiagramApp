@@ -9,7 +9,7 @@ COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
 COPY packages/editor-core/package.json ./packages/editor-core/
 
-# Install dependencies with legacy peer deps for compatibility if needed
+# Install dependencies including dev dependencies for build
 RUN npm install
 
 # Copy source code
@@ -64,12 +64,11 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install chromium browser binary
+# Install chromium
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    chromium-browser \
-    && rm -rf /var/lib/apt/lists/* || true
+    chromium \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create a stable symlink ('/usr/bin/chromium') if distro name it differently
-RUN if [ -f /usr/bin/chromium ] && [ ! -f /usr/bin/chromium-browser ]; then ln -s /usr/bin/chromium-browser /usr/bin/chromium; fi || true
 
 WORKDIR /app
 
@@ -77,8 +76,8 @@ WORKDIR /app
 COPY --from=build /app/package.json ./
 COPY --from=build /app/apps/api ./apps/api
 COPY --from=build /app/apps/web/build ./apps/web/build
-COPY --from=build /app/packages/editor-core ./packages/editor-core
 COPY --from=build /app/node_modules ./node_modules
+
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
@@ -86,17 +85,18 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV NODE_ENV=production
 ENV BACKEND_PORT=3001
 ENV ENABLE_SERVER_STORAGE=true
-ENV STORAGE_PATH=/app/data/diagrams
+ENV STORAGE_PATH=/app/apps/api/data/diagrams
+ENV DOWNLOAD_ASSETS_PATH=/app/apps/api/data/assets/download
 ENV WEB_APP_URL=http://localhost:3001
 
 # Expose the combined port
 EXPOSE 3001
 
 # Create storage volume directory
-RUN mkdir -p /app/data/diagrams /app/data/assets/download
+RUN mkdir -p /app/apps/api/data/diagrams /app/apps/api/data/assets/download
 
 # Define the volume for persistent data
-VOLUME ["/app/data/diagrams", "/app/data/assets/download"]
+VOLUME ["/app/apps/api/data/diagrams", "/app/apps/api/data/assets/download"]
 
 # Start the combined server (API + Static Web)
-CMD ["npm", "run", "start", "--workspace=apps/api"]
+CMD ["node", "apps/api/server.js"]

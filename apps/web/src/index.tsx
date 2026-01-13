@@ -24,13 +24,14 @@ root.render(
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
 
-// Service worker registration - only in production for PWA functionality
-if (process.env.NODE_ENV === 'production') {
-    serviceWorkerRegistration.register({
-        onSuccess: () => console.log('Service worker registered successfully'),
-        onUpdate: () => console.log('Service worker update available')
-    });
-} else {
-    // Disable service worker in development to avoid cache issues
-    serviceWorkerRegistration.unregister();
-}
+// Service worker registration - temporarily disabled to prevent caching issues
+serviceWorkerRegistration.unregister();
+// if (process.env.NODE_ENV === 'production') {
+//     serviceWorkerRegistration.register({
+//         onSuccess: () => console.log('Service worker registered successfully'),
+//         onUpdate: () => console.log('Service worker update available')
+//     });
+// } else {
+//     // Disable service worker in development to avoid cache issues
+//     serviceWorkerRegistration.unregister();
+// }

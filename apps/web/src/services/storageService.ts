@@ -24,10 +24,9 @@ class ServerStorage implements StorageService {
   private readonly AVAILABILITY_CACHE_MS = 60000; // Re-check every 60 seconds
 
   constructor(baseUrl: string = '') {
-    // In production (Docker), use relative paths (nginx proxy)
-    // In development, use localhost:3001
-    // Base URL is empty by default to use relative paths (works with proxy in dev and same-domain in prod)
-    this.baseUrl = baseUrl || '';
+    // FORCE relative paths to avoid any "localhost:5000" issues
+    // This ensures requests always go to the same origin (port 3001 in Docker)
+    this.baseUrl = '';
   }
 
   getBaseUrl() {
@@ -64,7 +63,7 @@ class ServerStorage implements StorageService {
 
   async listDiagrams(): Promise<DiagramInfo[]> {
     console.log(`Fetching diagrams from: ${this.baseUrl}/api/diagrams`);
-    const response = await fetch(`${this.baseUrl}/api/diagrams`);
+    const response = await fetch(`${this.baseUrl}/api/diagrams?t=${Date.now()}`);
     console.log(`Response status: ${response.status}`);
 
     if (!response.ok) {
@@ -85,7 +84,7 @@ class ServerStorage implements StorageService {
   async loadDiagram(id: string): Promise<Model> {
     console.log(`ServerStorage: Loading diagram ${id} from ${this.baseUrl}/api/diagrams/${id}`);
     try {
-      const response = await fetch(`${this.baseUrl}/api/diagrams/${id}`, {
+      const response = await fetch(`${this.baseUrl}/api/diagrams/${id}?t=${Date.now()}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         signal: AbortSignal.timeout(10000) // 10 second timeout

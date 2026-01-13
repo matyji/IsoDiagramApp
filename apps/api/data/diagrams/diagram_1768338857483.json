@@ -259,13 +259,6 @@
       "url": "/assets/base/vm.svg",
       "isIsometric": true,
       "collection": "isoflow"
-    },
-    {
-      "id": "4167da37-a8af-48c3-8f83-96f48b96fbf6",
-      "name": "ChatGPT-Logo",
-      "url": "/assets/download/icon-1768002485142-699203896.png",
-      "collection": "imported",
-      "isIsometric": true
     }
   ],
   "colors": [
@@ -300,42 +293,19 @@
   ],
   "items": [
     {
-      "id": "1709e0ed-669f-4853-8574-015827ea904a",
+      "id": "f0aec569-f712-428a-984a-7ad494e7aa62",
       "name": "Untitled",
-      "icon": "block",
-      "description": "<p><br></p>"
+      "icon": "laptop"
     },
     {
-      "id": "dab45cf1-3325-40bb-98c5-1a3d8e4e4e8d",
+      "id": "b77743de-fc31-4823-b39d-b5cfdfafbeb8",
       "name": "Untitled",
-      "icon": "block"
+      "icon": "storage"
     },
     {
-      "id": "b27b4079-9055-45d2-b098-22d091c24262",
-      "name": "Nouvelle node",
-      "icon": "block",
-      "description": "<p><br></p>"
-    },
-    {
-      "id": "a75284bb-17a6-42ef-992c-9c215c1839e4",
+      "id": "51a642e9-c168-4613-be21-4ee44bc592b9",
       "name": "Untitled",
-      "icon": "4167da37-a8af-48c3-8f83-96f48b96fbf6"
-    },
-    {
-      "id": "377cf2e2-fc32-4333-ba26-76cbb5dd3ea7",
-      "name": "Untitled",
-      "icon": "block"
-    },
-    {
-      "id": "8a1f5a3f-3f1c-4202-8fbf-8585ee5721c7",
-      "name": "Untitled",
-      "icon": "block",
-      "description": "<p><br></p>"
-    },
-    {
-      "id": "6b3661c6-bb85-4edb-ac50-31c130725974",
-      "name": "Nouvelle node",
-      "icon": "block"
+      "icon": "switch-module"
     }
   ],
   "views": [
@@ -345,61 +315,25 @@
         {
           "labelHeight": 80,
           "iconScale": 1,
-          "id": "6b3661c6-bb85-4edb-ac50-31c130725974",
+          "id": "51a642e9-c168-4613-be21-4ee44bc592b9",
           "tile": {
-            "x": 2,
-            "y": 0
-          }
-        },
-        {
-          "labelHeight": 80,
-          "iconScale": 1,
-          "id": "8a1f5a3f-3f1c-4202-8fbf-8585ee5721c7",
-          "tile": {
-            "x": -1,
-            "y": 0
-          }
-        },
-        {
-          "labelHeight": 80,
-          "iconScale": 1,
-          "id": "377cf2e2-fc32-4333-ba26-76cbb5dd3ea7",
-          "tile": {
-            "x": -1,
+            "x": 0,
             "y": 3
           }
         },
         {
           "labelHeight": 80,
           "iconScale": 1,
-          "id": "a75284bb-17a6-42ef-992c-9c215c1839e4",
+          "id": "b77743de-fc31-4823-b39d-b5cfdfafbeb8",
           "tile": {
-            "x": 2,
-            "y": 3
+            "x": 4,
+            "y": 2
           }
         },
         {
           "labelHeight": 80,
           "iconScale": 1,
-          "id": "b27b4079-9055-45d2-b098-22d091c24262",
-          "tile": {
-            "x": -1,
-            "y": 6
-          }
-        },
-        {
-          "labelHeight": 80,
-          "iconScale": 1,
-          "id": "dab45cf1-3325-40bb-98c5-1a3d8e4e4e8d",
-          "tile": {
-            "x": 1,
-            "y": 4
-          }
-        },
-        {
-          "labelHeight": 80,
-          "iconScale": 1,
-          "id": "1709e0ed-669f-4853-8574-015827ea904a",
+          "id": "f0aec569-f712-428a-984a-7ad494e7aa62",
           "tile": {
             "x": 1,
             "y": 7
@@ -408,45 +342,51 @@
       ],
       "connectors": [
         {
-          "id": "b4188fd8-e9c1-42b1-b3e7-afdc7fc489a8",
+          "id": "07433493-64b4-4a4c-999e-14e402f7e798",
           "color": "blue",
           "anchors": [
             {
-              "id": "83a3b944-8346-4290-8230-7fc0a131955b",
+              "id": "b994e2ac-d123-4f7c-b7ce-8e79b34e2c29",
               "ref": {
-                "item": "1709e0ed-669f-4853-8574-015827ea904a"
+                "item": "51a642e9-c168-4613-be21-4ee44bc592b9"
               }
             },
             {
-              "id": "e80f75cc-3389-4b3e-b5b2-942bc7b51d28",
+              "id": "77f8adf1-2c5b-4001-859e-e0c9690760a7",
               "ref": {
-                "item": "dab45cf1-3325-40bb-98c5-1a3d8e4e4e8d"
+                "item": "b77743de-fc31-4823-b39d-b5cfdfafbeb8"
+              }
+            }
+          ]
+        },
+        {
+          "id": "2d83c28e-7520-41d9-b72b-42c7ade2c8e0",
+          "color": "blue",
+          "anchors": [
+            {
+              "id": "4124b435-e9c1-4baa-8436-025eb319cb08",
+              "ref": {
+                "item": "f0aec569-f712-428a-984a-7ad494e7aa62"
+              }
+            },
+            {
+              "id": "03856bf4-2370-4409-8079-f1db127de5ea",
+              "ref": {
+                "item": "51a642e9-c168-4613-be21-4ee44bc592b9"
               }
             }
           ]
         }
       ],
-      "rectangles": [
-        {
-          "id": "d4d3a29b-b9b0-42f7-b46a-b5b9da1475ef",
-          "color": "blue",
-          "from": {
-            "x": 1,
-            "y": 11
-          },
-          "to": {
-            "x": 1,
-            "y": 11
-          }
-        }
-      ],
+      "rectangles": [],
       "textBoxes": [],
-      "id": "e1569896-f83a-4345-8654-1352ebdef4b5",
-      "lastUpdated": "2026-01-09T23:50:01.539Z"
+      "id": "c8851917-230c-40ca-8041-2e5b5eda3fc1",
+      "lastUpdated": "2026-01-13T21:14:07.580Z"
     }
   ],
   "fitToView": true,
-  "name": "test2",
-  "id": "1768002615409",
-  "lastModified": "2026-01-09T23:50:29.799Z"
+  "name": "test",
+  "id": "diagram_1768338857483",
+  "created": "2026-01-13T21:14:17.483Z",
+  "lastModified": "2026-01-13T21:14:17.483Z"
 }

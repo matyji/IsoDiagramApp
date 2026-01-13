@@ -16,7 +16,7 @@ console.log(`[BOOT] Loading environment from: ${envPath}`);
 dotenv.config({ path: envPath });
 
 const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, 'data', 'diagrams');
-const DOWNLOAD_ASSETS_PATH = path.join(__dirname, 'data', 'download');
+const DOWNLOAD_ASSETS_PATH = process.env.DOWNLOAD_ASSETS_PATH || path.join(__dirname, 'data', 'download');
 const BASE_ASSETS_PATH = path.join(__dirname, 'data', 'assets', 'base');
 
 function ensureDirSync(dir) {
@@ -100,7 +100,7 @@ if (STORAGE_ENABLED) {
       }
 
       const files = await fs.readdir(STORAGE_PATH);
-      console.log(`Found ${files.length} files in ${STORAGE_PATH}:`, files);
+      console.log(`Found ${files.length} files in ${STORAGE_PATH}`);
       const diagrams = [];
 
       for (const file of files) {
@@ -113,8 +113,6 @@ if (STORAGE_ENABLED) {
 
             // Extract name from various possible locations
             const name = data.name || data.title || 'Untitled Diagram';
-
-            console.log(`Successfully read diagram: ${file} (name: ${name})`);
 
             diagrams.push({
               id: file.replace('.json', ''),
@@ -130,7 +128,6 @@ if (STORAGE_ENABLED) {
         }
       }
 
-      console.log(`Returning ${diagrams.length} diagrams`);
       res.json(diagrams);
     } catch (error) {
       console.error('Error listing diagrams:', error);
@@ -371,9 +368,17 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 
 // --- END GLOBALLY AVAILABLE ROUTES ---
 
-// Serve static files from the built web app
+// Serve static files from the built web app with custom cache headers
 const webAppPath = path.join(__dirname, '../web/build');
-app.use(express.static(webAppPath));
+app.use(express.static(webAppPath, {
+  setHeaders: (res, path) => {
+    if (path.endsWith('index.html') || path.endsWith('service-worker.js')) {
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+    }
+  }
+}));
 
 // Express error handler
 app.use((err, req, res, next) => {
