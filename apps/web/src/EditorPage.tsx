@@ -19,8 +19,9 @@ import './App.css';
 const coreIcons = flattenCollections([isoflowIsopack]);
 
 const EditorPage: React.FC = () => {
-    const { readonlyDiagramId } = useParams<{ readonlyDiagramId: string }>();
-    const isReadonlyUrl = window.location.pathname.startsWith('/display/') && !!readonlyDiagramId;
+    const { readonlyDiagramId, editDiagramId } = useParams<{ readonlyDiagramId: string, editDiagramId: string }>();
+    const isReadonlyUrl = !!readonlyDiagramId;
+    const isEditUrl = !!editDiagramId;
     const searchParams = new URLSearchParams(window.location.search);
     const isExportMode = searchParams.get('export') === 'true';
 
@@ -30,12 +31,14 @@ const EditorPage: React.FC = () => {
         coreIcons,
         iconPackManager,
         isReadonlyUrl,
-        readonlyDiagramId
+        readonlyDiagramId,
+        isEditUrl,
+        editDiagramId
     });
 
     const editorMode = isExportMode
         ? 'NON_INTERACTIVE'
-        : isReadonlyUrl
+        : (isReadonlyUrl && !isEditUrl)
             ? 'EXPLORABLE_READONLY'
             : 'EDITABLE';
 

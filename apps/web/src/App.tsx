@@ -13,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<EditorPage />} />
         <Route path="/display/:readonlyDiagramId" element={<EditorPage />} />
+        <Route path="/edit/:editDiagramId" element={<EditorPage />} />
       </Routes>
     </BrowserRouter>
   );

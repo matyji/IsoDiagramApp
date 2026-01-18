@@ -160,6 +160,20 @@ if (STORAGE_ENABLED) {
     }
   });
 
+  // Open specific diagram in the editor
+  app.get('/api/diagrams/:id/open', (req, res) => {
+    const { id } = req.params;
+    console.log(`[GET /api/diagrams/${id}/open] Redirecting to editor...`);
+    res.redirect(`/edit/${id}`);
+  });
+
+  // Open specific diagram in readonly mode
+  app.get('/api/diagrams/:id/display', (req, res) => {
+    const { id } = req.params;
+    console.log(`[GET /api/diagrams/${id}/display] Redirecting to readonly view...`);
+    res.redirect(`/display/${id}`);
+  });
+
   // Save or update diagram
   app.put('/api/diagrams/:id', async (req, res) => {
     const diagramId = req.params.id;

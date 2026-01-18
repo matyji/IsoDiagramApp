@@ -20,13 +20,17 @@ interface UseDiagramProps {
     iconPackManager: any;
     isReadonlyUrl: boolean;
     readonlyDiagramId?: string;
+    isEditUrl?: boolean;
+    editDiagramId?: string;
 }
 
 export const useDiagram = ({
     coreIcons,
     iconPackManager,
     isReadonlyUrl,
-    readonlyDiagramId
+    readonlyDiagramId,
+    isEditUrl,
+    editDiagramId
 }: UseDiagramProps) => {
     const [diagrams, setDiagrams] = useState<SavedDiagram[]>([]);
     const [currentDiagram, setCurrentDiagram] = useState<SavedDiagram | null>(null);
@@ -38,6 +42,7 @@ export const useDiagram = ({
     const [serverStorageAvailable, setServerStorageAvailable] = useState(false);
 
     const [diagramData, setDiagramData] = useState<DiagramData>(() => {
+        // ... (lines omitted for brevity, but I should probably keep the structure)
         const lastOpenedData = localStorage.getItem('fossflow-last-opened-data');
         if (lastOpenedData) {
             try {
@@ -78,26 +83,58 @@ export const useDiagram = ({
         const loadReadonly = async () => {
             try {
                 const storage = storageManager.getStorage();
-                const diagramList = await storage.listDiagrams();
-                const diagramInfo = diagramList.find(d => d.id === readonlyDiagramId);
                 const data = await storage.loadDiagram(readonlyDiagramId);
+
+                if (!data) throw new Error('Diagram not found');
 
                 const readonlyDiagram: SavedDiagram = {
                     id: readonlyDiagramId,
-                    name: diagramInfo?.name || data.title || 'Mode lecture seule',
+                    name: data.title || 'Mode lecture seule',
                     data: data,
                     createdAt: new Date().toISOString(),
-                    updatedAt: diagramInfo?.lastModified.toISOString() || new Date().toISOString()
+                    updatedAt: new Date().toISOString()
                 };
 
                 await loadDiagram(readonlyDiagram, true);
             } catch (error) {
+                console.error('Failed to load readonly diagram:', error);
                 alert('Échec du chargement du diagramme');
                 window.location.href = '/';
             }
         };
         loadReadonly();
     }, [readonlyDiagramId, serverStorageAvailable, isReadonlyUrl]);
+
+    // Load edit diagram
+    useEffect(() => {
+        if (!isEditUrl || !serverStorageAvailable || !editDiagramId) return;
+
+        const loadEdit = async () => {
+            try {
+                const storage = storageManager.getStorage();
+                const diagramList = await storage.listDiagrams();
+                const diagramInfo = diagramList.find(d => d.id === editDiagramId);
+                const data = await storage.loadDiagram(editDiagramId);
+
+                if (!data) throw new Error('Diagram not found');
+
+                const editDiagram: SavedDiagram = {
+                    id: editDiagramId,
+                    name: diagramInfo?.name || data.title || 'Diagramme sans titre',
+                    data: data,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: diagramInfo?.lastModified.toISOString() || new Date().toISOString()
+                };
+
+                await loadDiagram(editDiagram, true);
+            } catch (error) {
+                console.error('Failed to load edit diagram:', error);
+                alert('Échec du chargement du diagramme pour édition');
+                window.location.href = '/';
+            }
+        };
+        loadEdit();
+    }, [editDiagramId, serverStorageAvailable, isEditUrl]);
 
     // Sync icons
     useEffect(() => {
@@ -153,7 +190,8 @@ export const useDiagram = ({
             setDiagrams(mappedList);
 
             const lastOpenedId = localStorage.getItem('fossflow-last-opened');
-            if (lastOpenedId && !currentDiagram) {
+            // Only auto-load if we are NOT on a specific diagram URL (display or edit)
+            if (lastOpenedId && !currentDiagram && !readonlyDiagramId && !editDiagramId) {
                 const last = mappedList.find(d => d.id === lastOpenedId);
                 if (last) {
                     await loadDiagram(last, true);
