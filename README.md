@@ -70,7 +70,7 @@ Le serveur API fournit des points d'entrée pour la gestion et l'exportation des
 | **POST** | `/api/diagrams` | Crée un nouveau diagramme. |
 | **PUT** | `/api/diagrams/:id` | Met à jour ou sauvegarde un diagramme existant. |
 | **DELETE** | `/api/diagrams/:id` | Supprime un diagramme du serveur. |
-| **POST** | `/api/upload` | **Nouveau** : Upload d'une image/icône (stockage dans `data/assets/download`). |
+| **POST** | `/api/upload` | **Nouveau** : Upload d'une image/icône (stockage dans `data/assets/imported`). |
 | **GET** | `/api/export/:id` | **Export Image** : Capture le diagramme en PNG. |
 
 #### Focus sur l'Export Image (`GET /api/export/:id`)
@@ -118,14 +118,19 @@ docker-compose up -d
 ### 2. Construction manuelle de l'image
 ```bash
 docker build -t isodiagram-app .
-sudo docker run -p 3001:3001   -v $(pwd)/apps/api/data/diagrams:/app/apps/api/data/diagrams   -v $(pwd)/apps/api/data/download:/app/apps/api/data/assets/download   isodiagram_app
+sudo docker run -p 3001:3001 \
+  -v $(pwd)/apps/api/data/diagrams:/app/apps/api/data/diagrams \
+  -v $(pwd)/apps/api/data/assets/imported:/app/apps/api/data/assets/imported \
+  -v $(pwd)/apps/api/data/assets/base:/app/apps/api/data/assets/base \
+  isodiagram-app
 ```
 
 ### Notes sur Docker :
 - L'image inclut toutes les dépendances nécessaires pour **Puppeteer** (export image).
 - Le serveur API à l'intérieur du container s'occupe de servir les fichiers statiques du Frontend.
-- Les diagrammes sont persistés dans le dossier `/app/data/diagrams` (mappé via le volume).
-- Les images uploadées sont persistées dans `/app/data/assets/download`.
+- Les diagrammes sont persistés dans le dossier `/app/apps/api/data/diagrams`.
+- Les images uploadées sont persistées dans `/app/apps/api/data/assets/imported`.
+- Les icônes de base peuvent être montées dans `/app/apps/api/data/assets/base`.
 
 ---
 

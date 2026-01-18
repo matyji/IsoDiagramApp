@@ -16,8 +16,9 @@ console.log(`[BOOT] Loading environment from: ${envPath}`);
 dotenv.config({ path: envPath });
 
 const STORAGE_PATH = process.env.STORAGE_PATH || path.join(__dirname, 'data', 'diagrams');
-const DOWNLOAD_ASSETS_PATH = process.env.DOWNLOAD_ASSETS_PATH || path.join(__dirname, 'data', 'download');
+const DOWNLOAD_ASSETS_PATH = process.env.DOWNLOAD_ASSETS_PATH || path.join(__dirname, 'data', 'assets', 'imported');
 const BASE_ASSETS_PATH = path.join(__dirname, 'data', 'assets', 'base');
+const IMPORTED_ASSETS_PATH = DOWNLOAD_ASSETS_PATH;
 
 function ensureDirSync(dir) {
   if (!existsSync(dir)) {
@@ -29,6 +30,7 @@ function ensureDirSync(dir) {
 try {
   ensureDirSync(DOWNLOAD_ASSETS_PATH);
   ensureDirSync(BASE_ASSETS_PATH);
+  ensureDirSync(IMPORTED_ASSETS_PATH);
   ensureDirSync(STORAGE_PATH);
 } catch (err) {
   console.error('[BOOT] Directory creation failed:', err);
@@ -343,7 +345,11 @@ if (STORAGE_ENABLED) {
 // --- GLOBALLY AVAILABLE ROUTES (Regardless of Storage) ---
 
 // Serve uploaded and base assets
-app.use('/assets/download', express.static(DOWNLOAD_ASSETS_PATH));
+console.log(`[BOOT] Serving /assets/imported from: ${IMPORTED_ASSETS_PATH}`);
+console.log(`[BOOT] Serving /assets/base from: ${BASE_ASSETS_PATH}`);
+
+app.use('/assets/imported', express.static(IMPORTED_ASSETS_PATH));
+app.use('/assets/download', express.static(IMPORTED_ASSETS_PATH)); // Alias for backward compatibility
 app.use('/assets/base', express.static(BASE_ASSETS_PATH));
 
 /**
@@ -370,7 +376,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  const fileUrl = `/assets/download/${req.file.filename}`;
+  const fileUrl = `/assets/imported/${req.file.filename}`;
   console.log(`[UPLOAD] Saved ${req.file.originalname} to ${fileUrl}`);
 
   res.json({

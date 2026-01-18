@@ -27,18 +27,17 @@ export function mergeDiagramData(base: DiagramData, update: Partial<DiagramData>
 }
 
 // Extract only the data that should be saved/exported
-export function extractSavableData(fullData: DiagramData): DiagramData {
-  return {
+export function extractSavableData(fullData: DiagramData): any {
+  const savable: any = {
     title: fullData.title,
     version: fullData.version,
     description: fullData.description,
-    // Only include non-empty arrays
-    icons: fullData.icons || [],
-    colors: fullData.colors || [],
     items: fullData.items || [],
     views: fullData.views || [],
     fitToView: fullData.fitToView !== false
   };
+
+  return savable;
 }
 
 // Validate diagram data structure

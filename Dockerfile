@@ -86,17 +86,17 @@ ENV NODE_ENV=production
 ENV BACKEND_PORT=3001
 ENV ENABLE_SERVER_STORAGE=true
 ENV STORAGE_PATH=/app/apps/api/data/diagrams
-ENV DOWNLOAD_ASSETS_PATH=/app/apps/api/data/assets/download
+ENV DOWNLOAD_ASSETS_PATH=/app/apps/api/data/assets/imported
 ENV WEB_APP_URL=http://localhost:3001
 
 # Expose the combined port
 EXPOSE 3001
 
 # Create storage volume directory
-RUN mkdir -p /app/apps/api/data/diagrams /app/apps/api/data/assets/download
+RUN mkdir -p /app/apps/api/data/diagrams /app/apps/api/data/assets/imported /app/apps/api/data/assets/base
 
 # Define the volume for persistent data
-VOLUME ["/app/apps/api/data/diagrams", "/app/apps/api/data/assets/download"]
+VOLUME ["/app/apps/api/data/diagrams", "/app/apps/api/data/assets/imported", "/app/apps/api/data/assets/base"]
 
 # Start the combined server (API + Static Web)
 CMD ["node", "apps/api/server.js"]

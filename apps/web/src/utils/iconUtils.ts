@@ -3,33 +3,36 @@ export const transformIconUrls = (icons: any[]) => {
         // 1. Skip if no icon or no id
         if (!icon || !icon.id) return icon;
 
-        // 2. Handle regular application icons (isoflow, aws, etc.)
-        // We point all non-imported icons to the local /assets/base/ folder
-        if (icon.collection !== 'imported') {
-            return {
-                ...icon,
-                url: `/assets/base/${icon.id.toLowerCase()}.svg`
-            };
-        }
+        const id = String(icon.id);
 
-        // 3. Handle imported user icons
-        if (icon.collection === 'imported' && icon.url && !icon.url.startsWith('data:')) {
-            // If it's already a full URL (including http), keep it
-            if (icon.url.startsWith('http')) return icon;
-
-            // If it's already a relative path starting with /assets/download/, keep it
-            if (icon.url.startsWith('/assets/download/')) {
+        // 2. Handle imported user icons (by collection OR by ID prefix)
+        if (icon.collection === 'imported' || id.startsWith('icon-') || id.startsWith('base64-')) {
+            // Keep data URLs and absolute URLs
+            if (icon.url && (icon.url.startsWith('data:') || icon.url.startsWith('http'))) {
                 return icon;
             }
 
-            // If it's just a filename or a path, normalize it to /assets/download/
-            const filename = icon.url.split('/').pop();
+            // Normalize to /assets/imported/
+            const filename = (icon.url || id).split('/').pop();
             return {
                 ...icon,
-                url: `/assets/download/${filename}`
+                collection: 'imported',
+                url: `/assets/imported/${filename}`
             };
         }
 
-        return icon;
+        // 3. Handle base icons (isoflow / everything else)
+        // Skip internal system icons (usually starting with underscore or containing 'isoflow-')
+        if (id.startsWith('_') || id.includes('isoflow-')) {
+            return icon;
+        }
+
+        // Extract the core ID (e.g. 'desktop' from 'isoflow:desktop')
+        const coreId = id.split(/[:/]/).pop() || id;
+
+        return {
+            ...icon,
+            url: `/assets/base/${coreId.toLowerCase()}.svg`
+        };
     });
 };

@@ -141,27 +141,20 @@ export const DiagramManager: React.FC<Props> = ({
       }
 
       /**
-       * Icon Persistence: Save ALL icons (default + imported)
-       *
-       * currentDiagramData comes from parent's currentModel/diagramData which includes:
-       * - All default icon collections (isoflow, aws, gcp, azure, kubernetes)
-       * - All imported custom icons (collection='imported')
-       *
-       * This ensures when loading, we have the complete icon set and don't lose
-       * any custom imported icons.
+       * Icon Persistence: We now manage icons and colors internally.
+       * We save only empty arrays to reduce JSON size.
+       * Re-construction happens on load based on item data.
        */
       const dataToSave = {
         ...currentDiagramData,
         name: saveName
       };
+      delete dataToSave.icons;
+      delete dataToSave.colors;
 
       console.log(
-        `DiagramManager: Saving diagram with ${dataToSave.icons?.length || 0} icons`
+        `DiagramManager: Saving diagram with internal asset management`
       );
-      const importedCount = (dataToSave.icons || []).filter((icon: any) => {
-        return icon.collection === 'imported';
-      }).length;
-      console.log(`DiagramManager: Including ${importedCount} imported icons`);
 
       let finalId: string;
       if (currentDiagramId) {

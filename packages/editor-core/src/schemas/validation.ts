@@ -6,72 +6,72 @@ import type {
   View,
   Rectangle
 } from 'src/types';
-import { getAllAnchors, getItemByIdOrThrow } from 'src/utils';
+import { getAllAnchors, getItemByIdOrThrow, getItemById } from 'src/utils';
 
 type IssueType =
   | {
-      type: 'INVALID_ANCHOR_TO_VIEW_ITEM_REF';
-      params: {
-        anchor: string;
-        viewItem: string;
-        view: string;
-        connector: string;
-      };
-    }
-  | {
-      type: 'INVALID_CONNECTOR_COLOR_REF';
-      params: {
-        connector: string;
-        view: string;
-        color: string;
-      };
-    }
-  | {
-      type: 'INVALID_RECTANGLE_COLOR_REF';
-      params: {
-        rectangle: string;
-        view: string;
-        color: string;
-      };
-    }
-  | {
-      type: 'INVALID_ANCHOR_TO_ANCHOR_REF';
-      params: {
-        srcAnchor: string;
-        destAnchor: string;
-        view: string;
-        connector: string;
-      };
-    }
-  | {
-      type: 'INVALID_VIEW_ITEM_TO_MODEL_ITEM_REF';
-      params: {
-        view: string;
-        modelItem: string;
-      };
-    }
-  | {
-      type: 'INVALID_ANCHOR_REF';
-      params: {
-        anchor: string;
-        view: string;
-        connector: string;
-      };
-    }
-  | {
-      type: 'INVALID_MODEL_TO_ICON_REF';
-      params: {
-        modelItem: string;
-        icon: string;
-      };
-    }
-  | {
-      type: 'CONNECTOR_TOO_FEW_ANCHORS';
-      params: {
-        connector: string;
-        view: string;
-      };
+    type: 'INVALID_ANCHOR_TO_VIEW_ITEM_REF';
+    params: {
+      anchor: string;
+      viewItem: string;
+      view: string;
+      connector: string;
     };
+  }
+  | {
+    type: 'INVALID_CONNECTOR_COLOR_REF';
+    params: {
+      connector: string;
+      view: string;
+      color: string;
+    };
+  }
+  | {
+    type: 'INVALID_RECTANGLE_COLOR_REF';
+    params: {
+      rectangle: string;
+      view: string;
+      color: string;
+    };
+  }
+  | {
+    type: 'INVALID_ANCHOR_TO_ANCHOR_REF';
+    params: {
+      srcAnchor: string;
+      destAnchor: string;
+      view: string;
+      connector: string;
+    };
+  }
+  | {
+    type: 'INVALID_VIEW_ITEM_TO_MODEL_ITEM_REF';
+    params: {
+      view: string;
+      modelItem: string;
+    };
+  }
+  | {
+    type: 'INVALID_ANCHOR_REF';
+    params: {
+      anchor: string;
+      view: string;
+      connector: string;
+    };
+  }
+  | {
+    type: 'INVALID_MODEL_TO_ICON_REF';
+    params: {
+      modelItem: string;
+      icon: string;
+    };
+  }
+  | {
+    type: 'CONNECTOR_TOO_FEW_ANCHORS';
+    params: {
+      connector: string;
+      view: string;
+    };
+  };
 
 type Issue = IssueType & {
   message: string;
@@ -154,19 +154,9 @@ export const validateConnector = (
   const issues: Issue[] = [];
 
   if (connector.color) {
-    try {
-      getItemByIdOrThrow(ctx.model.colors, connector.color);
-    } catch (e) {
-      issues.push({
-        type: 'INVALID_CONNECTOR_COLOR_REF',
-        params: {
-          connector: connector.id,
-          view: ctx.view.id,
-          color: connector.color
-        },
-        message:
-          'Connector references a color that does not exist in the model.'
-      });
+    const color = getItemById(ctx.model.colors, connector.color);
+    if (!color) {
+      console.warn(`Connector ${connector.id} references a color that does not exist in the model: ${connector.color}`);
     }
   }
 
@@ -204,19 +194,9 @@ export const validateRectangle = (
   const issues: Issue[] = [];
 
   if (rectangle.color) {
-    try {
-      getItemByIdOrThrow(ctx.model.colors, rectangle.color);
-    } catch (e) {
-      issues.push({
-        type: 'INVALID_RECTANGLE_COLOR_REF',
-        params: {
-          rectangle: rectangle.id,
-          view: ctx.view.id,
-          color: rectangle.color
-        },
-        message:
-          'Rectangle references a color that does not exist in the model.'
-      });
+    const color = getItemById(ctx.model.colors, rectangle.color);
+    if (!color) {
+      console.warn(`Rectangle ${rectangle.id} references a color that does not exist in the model: ${rectangle.color}`);
     }
   }
 
@@ -280,18 +260,9 @@ export const validateModelItem = (
 
   if (!modelItem.icon) return issues;
 
-  try {
-    getItemByIdOrThrow(ctx.model.icons, modelItem.icon);
-  } catch (e) {
-    issues.push({
-      type: 'INVALID_MODEL_TO_ICON_REF',
-      params: {
-        modelItem: modelItem.id,
-        icon: modelItem.icon
-      },
-      message:
-        'Invalid item found in the model.  The item references an icon that does not exist.'
-    });
+  const icon = getItemById(ctx.model.icons, modelItem.icon);
+  if (!icon) {
+    console.warn(`Model item ${modelItem.id} references an icon that does not exist: ${modelItem.icon}`);
   }
 
   return issues;

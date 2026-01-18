@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { flattenCollections } from '@isoflow/isopacks/dist/utils';
 
 // Available icon packs (excluding core isoflow which is always loaded)
-export type IconPackName = 'aws' | 'gcp' | 'azure' | 'kubernetes';
+// Available icon packs (excluding core isoflow and imported)
+export type IconPackName = string;
 
 export interface IconPackInfo {
   name: IconPackName;
@@ -24,12 +25,8 @@ export interface IconPackManagerState {
 const LAZY_LOADING_KEY = 'fossflow-lazy-loading-enabled';
 const ENABLED_PACKS_KEY = 'fossflow-enabled-icon-packs';
 
-// Pack metadata
-const PACK_METADATA: Record<IconPackName, string> = {
-  aws: 'AWS Icons',
-  gcp: 'Google Cloud Icons',
-  azure: 'Azure Icons',
-  kubernetes: 'Kubernetes Icons'
+const PACK_METADATA: Record<string, string> = {
+  // We only show base and imported collections
 };
 
 // Load preferences from localStorage

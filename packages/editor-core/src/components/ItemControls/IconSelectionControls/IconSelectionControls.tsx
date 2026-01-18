@@ -86,6 +86,7 @@ export const IconSelectionControls = () => {
 
       // Upload to server if possible
       let iconUrl = '';
+      let result: any = null;
 
       try {
         const formData = new FormData();
@@ -97,7 +98,7 @@ export const IconSelectionControls = () => {
         });
 
         if (response.ok) {
-          const result = await response.json();
+          result = await response.json();
           iconUrl = result.url;
         } else {
           throw new Error('Upload failed');
@@ -114,7 +115,7 @@ export const IconSelectionControls = () => {
       }
 
       newIcons.push({
-        id: generateId(),
+        id: result?.filename ? (result.filename.startsWith('icon-') ? result.filename : `icon-${result.filename}`) : `base64-${Date.now()}-${i}`,
         name: finalName,
         url: iconUrl,
         collection: 'imported',

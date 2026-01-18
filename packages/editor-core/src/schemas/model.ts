@@ -14,8 +14,8 @@ export const modelSchema = z
     description: constrainedStrings.description.optional(),
     items: modelItemsSchema,
     views: viewsSchema,
-    icons: iconsSchema,
-    colors: colorsSchema
+    icons: iconsSchema.optional().default([]),
+    colors: colorsSchema.optional().default([])
   })
   .superRefine((model, ctx) => {
     const issues = validateModel({ ...INITIAL_DATA, ...model });

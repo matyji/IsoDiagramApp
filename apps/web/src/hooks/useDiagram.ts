@@ -41,16 +41,81 @@ export const useDiagram = ({
     const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
     const [serverStorageAvailable, setServerStorageAvailable] = useState(false);
 
+    // Helper to reconstruct icons from item data
+    const reconstructIcons = useCallback((items: any[], existingIcons: any[] = []) => {
+        const itemIcons = (items || [])
+            .map((item: any) => item.icon)
+            .filter((id: string) => id)
+            .map((id: string) => {
+                // 1. Check if it's a core icon
+                const coreMatch = coreIcons.find((ci: any) => ci.id === id || ci.id.split(':').pop() === id);
+                if (coreMatch) {
+                    return { ...coreMatch, id };
+                }
+
+                // 2. Check if it's already in the provided icons (e.g. from data.icons)
+                const existingMatch = existingIcons.find(icon => icon.id === id);
+                if (existingMatch) return existingMatch;
+
+                // 3. Detect if it's imported (by ID prefix) or base
+                const isImported = id.startsWith('icon-') || id.startsWith('base64-');
+
+                return {
+                    id,
+                    name: id,
+                    // If it's not imported and not core, assume it's in /assets/base/
+                    url: isImported ? `/assets/imported/${id}` : `/assets/base/${id.toLowerCase()}.svg`,
+                    collection: isImported ? 'imported' : 'base',
+                    isIsometric: true
+                };
+            });
+
+        const importedIconsFromData = (existingIcons || []).filter((icon: any) => icon.collection === 'imported');
+
+        const map = new Map();
+        [...itemIcons, ...importedIconsFromData].forEach(icon => {
+            if (icon && icon.id) map.set(icon.id, icon);
+        });
+
+        const allReconstructed = Array.from(map.values());
+
+        // Final transformation (stripping prefixes, etc.)
+        return [
+            ...transformIconUrls(iconPackManager.loadedIcons),
+            ...transformIconUrls(allReconstructed)
+        ];
+    }, [coreIcons, iconPackManager.loadedIcons]);
+
     const [diagramData, setDiagramData] = useState<DiagramData>(() => {
-        // ... (lines omitted for brevity, but I should probably keep the structure)
         const lastOpenedData = localStorage.getItem('fossflow-last-opened-data');
         if (lastOpenedData) {
             try {
                 const data = JSON.parse(lastOpenedData);
-                const importedIcons = (data.icons || []).filter((icon: any) => icon.collection === 'imported');
+
+                // Reconstruction logic for last opened
+                const importedIconsFromItems = (data.items || [])
+                    .map((item: any) => item.icon)
+                    .filter((id: string) => id)
+                    .map((id: string) => {
+                        const coreMatch = coreIcons.find((ci: any) => ci.id === id || ci.id.split(':').pop() === id);
+                        if (coreMatch) return { ...coreMatch, id };
+
+                        return {
+                            id,
+                            name: id,
+                            url: (id.startsWith('icon-') || !id.includes(':')) ? `/assets/imported/${id}` : '',
+                            collection: 'imported',
+                            isIsometric: true
+                        };
+                    });
+
+                const importedIconsFromData = (data.icons || []).filter((icon: any) => icon.collection === 'imported');
+                const importedMap = new Map();
+                [...importedIconsFromItems, ...importedIconsFromData].forEach(icon => importedMap.set(icon.id, icon));
+
                 return {
                     ...data,
-                    icons: [...transformIconUrls(coreIcons), ...transformIconUrls(importedIcons)],
+                    icons: [...transformIconUrls(coreIcons), ...transformIconUrls(Array.from(importedMap.values()))],
                     colors: data.colors?.length ? data.colors : DEFAULT_COLORS,
                     fitToView: data.fitToView !== false
                 };
@@ -87,10 +152,20 @@ export const useDiagram = ({
 
                 if (!data) throw new Error('Diagram not found');
 
+                await iconPackManager.loadPacksForDiagram(data.items || []);
+                const mergedIcons = reconstructIcons(data.items, data.icons);
+
                 const readonlyDiagram: SavedDiagram = {
                     id: readonlyDiagramId,
                     name: data.title || 'Mode lecture seule',
-                    data: data,
+                    data: {
+                        ...data,
+                        title: data.title || 'Mode lecture seule',
+                        items: data.items || [],
+                        views: data.views || [],
+                        icons: mergedIcons,
+                        colors: data.colors?.length ? data.colors : DEFAULT_COLORS
+                    },
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
@@ -103,7 +178,7 @@ export const useDiagram = ({
             }
         };
         loadReadonly();
-    }, [readonlyDiagramId, serverStorageAvailable, isReadonlyUrl]);
+    }, [readonlyDiagramId, serverStorageAvailable, isReadonlyUrl, coreIcons]);
 
     // Load edit diagram
     useEffect(() => {
@@ -118,10 +193,20 @@ export const useDiagram = ({
 
                 if (!data) throw new Error('Diagram not found');
 
+                await iconPackManager.loadPacksForDiagram(data.items || []);
+                const mergedIcons = reconstructIcons(data.items, data.icons);
+
                 const editDiagram: SavedDiagram = {
                     id: editDiagramId,
                     name: diagramInfo?.name || data.title || 'Diagramme sans titre',
-                    data: data,
+                    data: {
+                        ...data,
+                        title: data.title || diagramInfo?.name || 'Diagramme sans titre',
+                        items: data.items || [],
+                        views: data.views || [],
+                        icons: mergedIcons,
+                        colors: data.colors?.length ? data.colors : DEFAULT_COLORS
+                    },
                     createdAt: new Date().toISOString(),
                     updatedAt: diagramInfo?.lastModified.toISOString() || new Date().toISOString()
                 };
@@ -134,7 +219,7 @@ export const useDiagram = ({
             }
         };
         loadEdit();
-    }, [editDiagramId, serverStorageAvailable, isEditUrl]);
+    }, [editDiagramId, serverStorageAvailable, isEditUrl, coreIcons]);
 
     // Sync icons
     useEffect(() => {
@@ -151,13 +236,35 @@ export const useDiagram = ({
     const loadDiagram = useCallback(async (diagram: SavedDiagram, skipUnsavedCheck = false) => {
         if (!skipUnsavedCheck && hasUnsavedChanges && !window.confirm('Vous avez des modifications non enregistrées. Continuer le chargement ?')) return;
 
-        await iconPackManager.loadPacksForDiagram(diagram.data.items || []);
+        let loadedData = diagram.data;
+        // If it's a server diagram and we only have the shell (no title or empty items), fetch full data
+        if (storageManager.isServerStorage() && (!loadedData.title || (loadedData.title === 'Shell' && loadedData.items.length === 0))) {
+            try {
+                const storage = storageManager.getStorage();
+                loadedData = await storage.loadDiagram(diagram.id);
+            } catch (e) {
+                console.error('Failed to fetch full data for server diagram:', e);
+                alert('Erreur lors du chargement des données depuis le serveur.');
+                return;
+            }
+        }
 
-        const importedIcons = (diagram.data.icons || []).filter((icon: any) => icon.collection === 'imported');
-        const mergedIcons = [...transformIconUrls(iconPackManager.loadedIcons), ...transformIconUrls(importedIcons)];
-        const dataWithIcons = { ...diagram.data, icons: mergedIcons };
+        await iconPackManager.loadPacksForDiagram(loadedData.items || []);
+        const mergedIcons = reconstructIcons(loadedData.items, loadedData.icons);
+        const dataWithIcons: DiagramData = {
+            ...loadedData,
+            title: loadedData.title || diagram.name || 'Diagramme sans titre',
+            items: loadedData.items || [],
+            views: loadedData.views || [],
+            icons: mergedIcons,
+            colors: loadedData.colors?.length ? loadedData.colors : DEFAULT_COLORS,
+            fitToView: loadedData.fitToView !== false
+        };
 
-        setCurrentDiagram(diagram);
+        setCurrentDiagram({
+            ...diagram,
+            data: dataWithIcons
+        });
         setDiagramName(diagram.name);
         setDiagramData(dataWithIcons);
         setCurrentModel(dataWithIcons);
@@ -166,11 +273,14 @@ export const useDiagram = ({
 
         try {
             localStorage.setItem('fossflow-last-opened', diagram.id);
-            localStorage.setItem('fossflow-last-opened-data', JSON.stringify(diagram.data));
+            const lastOpenedClean = { ...dataWithIcons };
+            delete (lastOpenedClean as any).icons;
+            delete (lastOpenedClean as any).colors;
+            localStorage.setItem('fossflow-last-opened-data', JSON.stringify(lastOpenedClean));
         } catch (e) {
             console.error('Failed to save last opened:', e);
         }
-    }, [hasUnsavedChanges, iconPackManager]);
+    }, [hasUnsavedChanges, iconPackManager, coreIcons, serverStorageAvailable]);
 
     // Unified list loading
     const refreshDiagramList = useCallback(async () => {
@@ -182,7 +292,12 @@ export const useDiagram = ({
             const mappedList: SavedDiagram[] = list.map(item => ({
                 id: item.id,
                 name: item.name,
-                data: (item as any).data || { items: [], icons: [], views: [] },
+                data: (item as any).data || {
+                    title: 'Shell', // Temporary title to pass validation if ever triggered before fetch
+                    items: [],
+                    icons: [],
+                    views: []
+                },
                 createdAt: (item as any).createdAt || item.lastModified.toISOString(),
                 updatedAt: item.lastModified.toISOString()
             }));
@@ -224,7 +339,7 @@ export const useDiagram = ({
         try {
             const diagramsToStore = diagrams.map(d => ({
                 ...d,
-                data: { ...d.data, icons: [] }
+                data: { ...d.data, icons: [], colors: [] }
             }));
             localStorage.setItem('fossflow-diagrams', JSON.stringify(diagramsToStore));
         } catch (e) {
@@ -245,13 +360,9 @@ export const useDiagram = ({
             if (!window.confirm(`Un diagramme nommé "${diagramName}" existe déjà. Cela l'écrasera. Êtes-vous sûr de vouloir continuer ?`)) return;
         }
 
-        const importedIcons = (currentModel?.icons || diagramData.icons || [])
-            .filter(icon => icon.collection === 'imported');
-
-        const savedData: DiagramData = {
+        // We no longer save full icons and colors arrays in the JSON
+        const savedData: any = {
             title: diagramName,
-            icons: importedIcons,
-            colors: currentModel?.colors || diagramData.colors || [],
             items: currentModel?.items || diagramData.items || [],
             views: currentModel?.views || diagramData.views || [],
             fitToView: true
@@ -336,13 +447,14 @@ export const useDiagram = ({
             localStorage.removeItem('fossflow-last-opened');
             localStorage.removeItem('fossflow-last-opened-data');
         }
-    }, [hasUnsavedChanges, iconPackManager.loadedIcons]);
+    }, [hasUnsavedChanges, iconPackManager.loadedIcons, coreIcons]);
 
     const handleModelUpdated = useCallback((model: any) => {
         const updatedModel = {
             title: model.title || diagramName || 'Untitled',
-            icons: model.icons || [],
-            colors: model.colors || DEFAULT_COLORS,
+            // Preserve current icons/colors if the update doesn't provide them
+            icons: (model.icons && model.icons.length > 0) ? model.icons : (currentModel?.icons || diagramData.icons || []),
+            colors: (model.colors && model.colors.length > 0) ? model.colors : (currentModel?.colors || diagramData.colors || DEFAULT_COLORS),
             items: model.items || [],
             views: model.views || [],
             fitToView: true
@@ -351,23 +463,14 @@ export const useDiagram = ({
         setCurrentModel(updatedModel);
         setDiagramData(updatedModel);
         if (!isReadonlyUrl) setHasUnsavedChanges(true);
-    }, [diagramName, isReadonlyUrl]);
+    }, [diagramName, isReadonlyUrl, currentModel, diagramData, DEFAULT_COLORS]);
 
     const exportDiagram = useCallback(() => {
         const modelToExport = currentModel || diagramData;
-        const allModelIcons = modelToExport.icons || [];
-        const diagramImportedIcons = (diagramData.icons || []).filter(icon => icon.collection === 'imported');
 
-        const iconMap = new Map();
-        allModelIcons.forEach(icon => iconMap.set(icon.id, icon));
-        diagramImportedIcons.forEach(icon => {
-            if (!iconMap.has(icon.id)) iconMap.set(icon.id, icon);
-        });
-
-        const exportData = {
+        // When exporting, we ALSO remove icons and colors to keep it clean
+        const exportData: any = {
             title: diagramName || modelToExport.title || 'Exported Diagram',
-            icons: Array.from(iconMap.values()),
-            colors: modelToExport.colors || [],
             items: modelToExport.items || [],
             views: modelToExport.views || [],
             fitToView: true
@@ -384,24 +487,15 @@ export const useDiagram = ({
     }, [currentModel, diagramData, diagramName]);
 
     const handleDiagramManagerLoad = useCallback(async (id: string, data: any) => {
-        const loadedIcons = data.icons || [];
         await iconPackManager.loadPacksForDiagram(data.items || []);
 
-        let finalIcons;
-        const hasDefaultIcons = loadedIcons.some((icon: any) =>
-            ['isoflow', 'aws', 'gcp'].includes(icon.collection)
-        );
-
-        if (hasDefaultIcons) {
-            finalIcons = transformIconUrls(loadedIcons);
-        } else {
-            const importedIcons = loadedIcons.filter((icon: any) => icon.collection === 'imported');
-            finalIcons = [...transformIconUrls(iconPackManager.loadedIcons), ...transformIconUrls(importedIcons)];
-        }
+        const finalIcons = reconstructIcons(data.items, data.icons);
 
         const mergedData: DiagramData = {
             ...data,
             title: data.title || data.name || 'Loaded Diagram',
+            items: data.items || [],
+            views: data.views || [],
             icons: finalIcons,
             colors: data.colors?.length ? data.colors : DEFAULT_COLORS,
             fitToView: data.fitToView !== false
@@ -421,20 +515,17 @@ export const useDiagram = ({
         setHasUnsavedChanges(false);
         setDiagramData(mergedData);
         setFossflowKey(prev => prev + 1);
-    }, [iconPackManager]);
+    }, [iconPackManager, coreIcons]);
 
     // Auto-save effect
     useEffect(() => {
         if (!currentModel || !hasUnsavedChanges || !currentDiagram) return;
 
         const autoSaveTimer = setTimeout(() => {
-            const importedIcons = (currentModel?.icons || diagramData.icons || [])
-                .filter(icon => icon.collection === 'imported');
-
             const savedData = {
                 title: diagramName || currentDiagram.name,
-                icons: importedIcons,
-                colors: currentModel.colors || [],
+                icons: [], // Removed
+                colors: [], // Removed
                 items: currentModel.items || [],
                 views: currentModel.views || [],
                 fitToView: true
@@ -458,7 +549,7 @@ export const useDiagram = ({
         }, 5000);
 
         return () => clearTimeout(autoSaveTimer);
-    }, [currentModel, hasUnsavedChanges, currentDiagram, diagramName, diagramData.icons]);
+    }, [currentModel, hasUnsavedChanges, currentDiagram, diagramName]);
 
     return {
         diagrams,

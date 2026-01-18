@@ -6,15 +6,18 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - isodiagram-data:/app/data/diagrams
-      - isodiagram-assets:/app/data/assets/download
+      - isodiagram-data:/app/apps/api/data/diagrams
+      - isodiagram-assets:/app/apps/api/data/assets/imported
+      - isodiagram-base-assets:/app/apps/api/data/assets/base
     environment:
       - BACKEND_PORT=3001
       - ENABLE_SERVER_STORAGE=true
-      - STORAGE_PATH=/app/data/diagrams
+      - STORAGE_PATH=/app/apps/api/data/diagrams
+      - DOWNLOAD_ASSETS_PATH=/app/apps/api/data/assets/imported
       - WEB_APP_URL=http://localhost:3001
     restart: unless-stopped
 
 volumes:
   isodiagram-data:
   isodiagram-assets:
+  isodiagram-base-assets:
