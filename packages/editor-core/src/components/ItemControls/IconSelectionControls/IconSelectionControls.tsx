@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Stack, Alert, IconButton as MUIIconButton, Box, Button, FormControlLabel, Checkbox, Typography, Slider } from '@mui/material';
+import { Stack, Alert, IconButton as MUIIconButton, Box, Button, FormControlLabel, Checkbox, Typography, Slider, TextField } from '@mui/material';
 import { ControlsContainer } from 'src/components/ItemControls/components/ControlsContainer';
 import { useUiStateStore } from 'src/stores/uiStateStore';
 import { useModelStore } from 'src/stores/modelStore';
@@ -32,6 +32,7 @@ export const IconSelectionControls = () => {
     // Check localStorage to see if user has dismissed the alert
     return localStorage.getItem('fossflow-show-drag-hint') !== 'false';
   });
+  const [customImportName, setCustomImportName] = useState('');
 
 
   const onMouseDown = useCallback(
@@ -74,15 +75,16 @@ export const IconSelectionControls = () => {
 
       // Generate unique name
       let baseName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
-      let finalName = baseName;
+      let finalName = customImportName || baseName;
+      let deduplicatedName = finalName;
       let counter = 1;
 
-      while (existingNames.has(finalName.toLowerCase())) {
-        finalName = `${baseName}_${counter}`;
+      while (existingNames.has(deduplicatedName.toLowerCase())) {
+        deduplicatedName = `${finalName}_${counter}`;
         counter++;
       }
 
-      existingNames.add(finalName.toLowerCase());
+      existingNames.add(deduplicatedName.toLowerCase());
 
       // Upload to server if possible
       let iconUrl = '';
@@ -90,6 +92,8 @@ export const IconSelectionControls = () => {
 
       try {
         const formData = new FormData();
+        // Append fields BEFORE file for multer req.body access
+        formData.append('name', deduplicatedName);
         formData.append('file', file);
 
         const response = await fetch('/api/upload', {
@@ -115,8 +119,8 @@ export const IconSelectionControls = () => {
       }
 
       newIcons.push({
-        id: result?.filename ? (result.filename.startsWith('icon-') ? result.filename : `icon-${result.filename}`) : `base64-${Date.now()}-${i}`,
-        name: finalName,
+        id: result?.filename ? result.filename : `base64-${Date.now()}-${i}`,
+        name: deduplicatedName,
         url: iconUrl,
         collection: 'imported',
         isIsometric: treatAsIsometric
@@ -138,9 +142,10 @@ export const IconSelectionControls = () => {
       }
     }
 
-    // Reset input
+    // Reset input and custom name
     event.target.value = '';
-  }, [currentIcons, modelActions, iconCategoriesState, uiStateActions, treatAsIsometric, iconScale]);
+    setCustomImportName('');
+  }, [currentIcons, modelActions, iconCategoriesState, uiStateActions, treatAsIsometric, customImportName]);
 
   return (
     <ControlsContainer
@@ -196,19 +201,34 @@ export const IconSelectionControls = () => {
           p: 1.5,
           backgroundColor: '#f5f5f5'
         }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+            Import Icon
+          </Typography>
+
+          <TextField
+            fullWidth
+            size="small"
+            label="Nom de l'icône"
+            value={customImportName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomImportName(e.target.value)}
+            placeholder="Ex: Serveur Web"
+            sx={{ mb: 1.5, backgroundColor: 'white' }}
+          />
+
           <Button
-            variant="outlined"
+            variant="contained"
             startIcon={<FileUploadIcon />}
             onClick={handleImportClick}
             fullWidth
+            sx={{ mb: 1 }}
           >
-            Import Icons
+            Sélectionner Image
           </Button>
           <FormControlLabel
             control={
               <Checkbox
                 checked={treatAsIsometric}
-                onChange={(e) => setTreatAsIsometric(e.target.checked)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTreatAsIsometric(e.target.checked)}
                 size="small"
               />
             }

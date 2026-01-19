@@ -30,10 +30,13 @@ export const useIcon = (id: string | undefined, scaleOverride?: number) => {
       return <NonIsometricIcon icon={icon} scale={scale} />;
     }
 
+    const isImported = icon.collection === 'imported' || icon.id.startsWith('icon-') || icon.id.startsWith('base64-');
+
     return (
       <IsometricIcon
         url={icon.url}
         scale={scale}
+        isImported={isImported}
         onImageLoaded={() => {
           setHasLoaded(true);
         }}

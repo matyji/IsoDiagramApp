@@ -5,8 +5,9 @@ export const transformIconUrls = (icons: any[]) => {
 
         const id = String(icon.id);
 
-        // 2. Handle imported user icons (by collection OR by ID prefix)
-        if (icon.collection === 'imported' || id.startsWith('icon-') || id.startsWith('base64-')) {
+        // 2. Handle imported user icons (by collection OR by ID prefix OR by file extension)
+        const isImageFile = id.match(/\.(png|jpg|jpeg|svg|webp)$/i);
+        if (icon.collection === 'imported' || id.startsWith('icon-') || id.startsWith('base64-') || isImageFile) {
             // Keep data URLs and absolute URLs
             if (icon.url && (icon.url.startsWith('data:') || icon.url.startsWith('http'))) {
                 return icon;

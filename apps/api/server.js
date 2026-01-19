@@ -137,6 +137,30 @@ if (STORAGE_ENABLED) {
     }
   });
 
+  // Get all available icons (flat list of names)
+  app.get('/api/icons', async (req, res) => {
+    try {
+      const getNamesInDir = async (dirPath) => {
+        if (!existsSync(dirPath)) return [];
+        const files = await fs.readdir(dirPath);
+        return files
+          .filter(file => file.endsWith('.svg') || file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg'))
+          .map(file => file.split('.').slice(0, -1).join('.'));
+      };
+
+      const baseNames = await getNamesInDir(BASE_ASSETS_PATH);
+      const importedNames = await getNamesInDir(IMPORTED_ASSETS_PATH);
+
+      // Combine and remove duplicates
+      const allNames = Array.from(new Set([...baseNames, ...importedNames]));
+
+      res.json(allNames);
+    } catch (error) {
+      console.error('Error listing icons:', error);
+      res.status(500).json({ error: 'Failed to list icons' });
+    }
+  });
+
   // Get specific diagram
   app.get('/api/diagrams/:id', async (req, res) => {
     const diagramId = req.params.id;
@@ -360,9 +384,18 @@ const storage = multer.diskStorage({
     cb(null, DOWNLOAD_ASSETS_PATH);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    // Check for custom name in body or query
+    const customName = req.body.name || req.query.name;
     const ext = path.extname(file.originalname);
-    cb(null, 'icon-' + uniqueSuffix + ext);
+
+    if (customName) {
+      // Sanitize the custom name
+      const sanitized = customName.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
+      cb(null, sanitized + ext);
+    } else {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, 'icon-' + uniqueSuffix + ext);
+    }
   }
 });
 

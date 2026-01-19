@@ -18,7 +18,12 @@ export const NonIsometricIcon = ({ icon, scale }: Props) => {
           position: 'absolute',
           left: -PROJECTED_TILE_SIZE.width / 2,
           top: -PROJECTED_TILE_SIZE.height / 2,
-          transformOrigin: 'top left',
+          width: PROJECTED_TILE_SIZE.width,
+          height: PROJECTED_TILE_SIZE.height,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transformOrigin: 'center center',
           transform: getIsoProjectionCss()
         }}
       >
@@ -26,7 +31,11 @@ export const NonIsometricIcon = ({ icon, scale }: Props) => {
           component="img"
           src={icon.url}
           alt={`icon-${icon.id}`}
-          sx={{ width: PROJECTED_TILE_SIZE.width * 0.7 * finalScale }}
+          sx={{
+            maxWidth: '80%',
+            maxHeight: '80%',
+            transform: `scale(${finalScale})`
+          }}
         />
       </Box>
     </Box>

@@ -40,9 +40,10 @@ export const useDiagram = ({
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
     const [serverStorageAvailable, setServerStorageAvailable] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Helper to reconstruct icons from item data
-    const reconstructIcons = useCallback((items: any[], existingIcons: any[] = []) => {
+    const reconstructIcons = useCallback((items: any[], existingIcons: any[] = [], packIconsOverride?: any[]) => {
         const itemIcons = (items || [])
             .map((item: any) => item.icon)
             .filter((id: string) => id)
@@ -57,8 +58,8 @@ export const useDiagram = ({
                 const existingMatch = existingIcons.find(icon => icon.id === id);
                 if (existingMatch) return existingMatch;
 
-                // 3. Detect if it's imported (by ID prefix) or base
-                const isImported = id.startsWith('icon-') || id.startsWith('base64-');
+                // 3. Detect if it's imported (by ID prefix or file extension) or base
+                const isImported = id.startsWith('icon-') || id.startsWith('base64-') || id.match(/\.(png|jpg|jpeg|svg|webp)$/i);
 
                 return {
                     id,
@@ -71,8 +72,14 @@ export const useDiagram = ({
             });
 
         const importedIconsFromData = (existingIcons || []).filter((icon: any) => icon.collection === 'imported');
+        const packIcons = packIconsOverride || iconPackManager.loadedIcons || [];
 
         const map = new Map();
+
+        // Add pack icons first so they are available
+        packIcons.forEach((icon: any) => map.set(icon.id, icon));
+
+        // Add reconstructed/imported icons
         [...itemIcons, ...importedIconsFromData].forEach(icon => {
             if (icon && icon.id) map.set(icon.id, icon);
         });
@@ -80,10 +87,7 @@ export const useDiagram = ({
         const allReconstructed = Array.from(map.values());
 
         // Final transformation (stripping prefixes, etc.)
-        return [
-            ...transformIconUrls(iconPackManager.loadedIcons),
-            ...transformIconUrls(allReconstructed)
-        ];
+        return transformIconUrls(allReconstructed);
     }, [coreIcons, iconPackManager.loadedIcons]);
 
     const [diagramData, setDiagramData] = useState<DiagramData>(() => {
@@ -147,6 +151,7 @@ export const useDiagram = ({
 
         const loadReadonly = async () => {
             try {
+                setIsLoading(true);
                 const storage = storageManager.getStorage();
                 const data = await storage.loadDiagram(readonlyDiagramId);
 
@@ -175,6 +180,8 @@ export const useDiagram = ({
                 console.error('Failed to load readonly diagram:', error);
                 alert('Échec du chargement du diagramme');
                 window.location.href = '/';
+            } finally {
+                setIsLoading(false);
             }
         };
         loadReadonly();
@@ -186,6 +193,7 @@ export const useDiagram = ({
 
         const loadEdit = async () => {
             try {
+                setIsLoading(true);
                 const storage = storageManager.getStorage();
                 const diagramList = await storage.listDiagrams();
                 const diagramInfo = diagramList.find(d => d.id === editDiagramId);
@@ -216,6 +224,8 @@ export const useDiagram = ({
                 console.error('Failed to load edit diagram:', error);
                 alert('Échec du chargement du diagramme pour édition');
                 window.location.href = '/';
+            } finally {
+                setIsLoading(false);
             }
         };
         loadEdit();
@@ -223,6 +233,7 @@ export const useDiagram = ({
 
     // Sync icons
     useEffect(() => {
+        if (isLoading) return; // Prevent syncing while a new diagram is loading
         const transformedLoaded = transformIconUrls(iconPackManager.loadedIcons);
         setDiagramData(prev => ({
             ...prev,
@@ -231,10 +242,12 @@ export const useDiagram = ({
                 ...transformIconUrls((prev.icons || []).filter(icon => icon.collection === 'imported'))
             ]
         }));
-    }, [iconPackManager.loadedIcons]);
+    }, [iconPackManager.loadedIcons, isLoading]);
 
     const loadDiagram = useCallback(async (diagram: SavedDiagram, skipUnsavedCheck = false) => {
         if (!skipUnsavedCheck && hasUnsavedChanges && !window.confirm('Vous avez des modifications non enregistrées. Continuer le chargement ?')) return;
+
+        setIsLoading(true);
 
         let loadedData = diagram.data;
         // If it's a server diagram and we only have the shell (no title or empty items), fetch full data
@@ -279,6 +292,8 @@ export const useDiagram = ({
             localStorage.setItem('fossflow-last-opened-data', JSON.stringify(lastOpenedClean));
         } catch (e) {
             console.error('Failed to save last opened:', e);
+        } finally {
+            setIsLoading(false);
         }
     }, [hasUnsavedChanges, iconPackManager, coreIcons, serverStorageAvailable]);
 
@@ -487,18 +502,34 @@ export const useDiagram = ({
     }, [currentModel, diagramData, diagramName]);
 
     const handleDiagramManagerLoad = useCallback(async (id: string, data: any) => {
-        await iconPackManager.loadPacksForDiagram(data.items || []);
+        setIsLoading(true);
+        let loadedData = data;
 
-        const finalIcons = reconstructIcons(data.items, data.icons);
+        // If server storage and partial data (Shell), fetch full data
+        if (serverStorageAvailable && (!loadedData.items || loadedData.items.length === 0 || loadedData.title === 'Shell')) {
+            try {
+                const storage = storageManager.getStorage();
+                const fetched = await storage.loadDiagram(id);
+                if (fetched) {
+                    loadedData = fetched;
+                }
+            } catch (e) {
+                console.error('Failed to fetch full diagram:', e);
+            }
+        }
+
+        const currentPackIcons = await iconPackManager.loadPacksForDiagram(loadedData.items || []);
+
+        const finalIcons = reconstructIcons(loadedData.items, loadedData.icons, currentPackIcons);
 
         const mergedData: DiagramData = {
-            ...data,
-            title: data.title || data.name || 'Loaded Diagram',
-            items: data.items || [],
-            views: data.views || [],
+            ...loadedData,
+            title: loadedData.title || loadedData.name || 'Loaded Diagram',
+            items: loadedData.items || [],
+            views: loadedData.views || [],
             icons: finalIcons,
-            colors: data.colors?.length ? data.colors : DEFAULT_COLORS,
-            fitToView: data.fitToView !== false
+            colors: loadedData.colors?.length ? loadedData.colors : DEFAULT_COLORS,
+            fitToView: loadedData.fitToView !== false
         };
 
         const newDiagram = {
@@ -512,10 +543,10 @@ export const useDiagram = ({
         setDiagramName(newDiagram.name);
         setCurrentDiagram(newDiagram);
         setCurrentModel(mergedData);
-        setHasUnsavedChanges(false);
         setDiagramData(mergedData);
         setFossflowKey(prev => prev + 1);
-    }, [iconPackManager, coreIcons]);
+        setIsLoading(false);
+    }, [iconPackManager, coreIcons, serverStorageAvailable]);
 
     // Auto-save effect
     useEffect(() => {
@@ -568,6 +599,7 @@ export const useDiagram = ({
         handleModelUpdated,
         exportDiagram,
         handleDiagramManagerLoad,
-        currentModel
+        currentModel,
+        isLoading
     };
 };

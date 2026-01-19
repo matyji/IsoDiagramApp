@@ -197,7 +197,7 @@ export const useIconPackManager = (coreIcons: any[]) => {
 
   // Auto-detect required packs from diagram data
   const loadPacksForDiagram = useCallback(async (diagramItems: any[]) => {
-    if (!diagramItems || diagramItems.length === 0) return;
+    if (!diagramItems || diagramItems.length === 0) return loadedIcons;
 
     // Extract unique collections from diagram items
     const collections = new Set<string>();
@@ -220,9 +220,14 @@ export const useIconPackManager = (coreIcons: any[]) => {
       }
     });
 
-    // Load required packs
+    // Load required packs and collect new icons
+    let newIcons: any[] = [];
     for (const pack of packsToLoad) {
-      await loadPack(pack);
+      const packIcons = await loadPack(pack);
+      if (packIcons) {
+        newIcons = [...newIcons, ...packIcons];
+      }
+
       // Also add to enabled packs
       if (!enabledPacks.includes(pack)) {
         const newEnabledPacks = [...enabledPacks, pack];
@@ -230,7 +235,10 @@ export const useIconPackManager = (coreIcons: any[]) => {
         saveEnabledPacks(newEnabledPacks);
       }
     }
-  }, [packInfo, enabledPacks, loadPack]);
+
+    // Return the complete list: existing loaded icons + newly loaded ones
+    return [...loadedIcons, ...newIcons];
+  }, [packInfo, enabledPacks, loadPack, loadedIcons]);
 
   // Initialize: Load enabled packs or all packs depending on lazy loading setting
   useEffect(() => {

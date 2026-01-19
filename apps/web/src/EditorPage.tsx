@@ -4,6 +4,7 @@ import { Isoflow, allLocales } from 'fossflow';
 import { flattenCollections } from '@isoflow/isopacks/dist/utils';
 import isoflowIsopack from '@isoflow/isopacks/dist/isoflow';
 
+import { Backdrop, CircularProgress } from '@mui/material';
 import { useIconPackManager } from './services/iconPackManager';
 import { useDiagram } from './hooks/useDiagram';
 import Toolbar from './components/editor/Toolbar';
@@ -164,6 +165,13 @@ const EditorPage: React.FC = () => {
                     onClose={() => setShowDiagramManager(false)}
                 />
             )}
+
+            <Backdrop
+                sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+                open={diagram.isLoading}
+            >
+                <CircularProgress color="inherit" />
+            </Backdrop>
         </div>
     );
 };
