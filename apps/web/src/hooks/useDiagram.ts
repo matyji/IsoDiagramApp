@@ -35,12 +35,13 @@ export const useDiagram = ({
     const [diagrams, setDiagrams] = useState<SavedDiagram[]>([]);
     const [currentDiagram, setCurrentDiagram] = useState<SavedDiagram | null>(null);
     const [diagramName, setDiagramName] = useState('');
-    const [fossflowKey, setFossflowKey] = useState(0);
     const [currentModel, setCurrentModel] = useState<DiagramData | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
     const [serverStorageAvailable, setServerStorageAvailable] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [fossflowKey, setFossflowKey] = useState(`initial-${Date.now()}`);
+    const loadIdRef = useRef(0);
 
     // Helper to reconstruct icons from item data
     const reconstructIcons = useCallback((items: any[], existingIcons: any[] = [], packIconsOverride?: any[]) => {
@@ -124,7 +125,9 @@ export const useDiagram = ({
                     fitToView: data.fitToView !== false
                 };
             } catch (e) {
-                console.error('Failed to load last opened data:', e);
+                console.error('Failed to load last opened data, clearing corrupted state:', e);
+                localStorage.removeItem('fossflow-last-opened');
+                localStorage.removeItem('fossflow-last-opened-data');
             }
         }
 
@@ -137,6 +140,28 @@ export const useDiagram = ({
             fitToView: true
         };
     });
+
+    const resetToCleanState = useCallback(() => {
+        console.warn('[useDiagram] Resetting to clean state due to persistent errors');
+        localStorage.removeItem('fossflow-last-opened');
+        localStorage.removeItem('fossflow-last-opened-data');
+
+        const emptyDiagram: DiagramData = {
+            title: 'Diagramme sans titre',
+            icons: transformIconUrls(coreIcons),
+            colors: DEFAULT_COLORS,
+            items: [],
+            views: [],
+            fitToView: true
+        };
+
+        setCurrentDiagram(null);
+        setDiagramName('');
+        setDiagramData(emptyDiagram);
+        setCurrentModel(emptyDiagram);
+        setHasUnsavedChanges(false);
+        setFossflowKey(`reset-${Date.now()}`);
+    }, [coreIcons]);
 
     // Initialize storage
     useEffect(() => {
@@ -231,71 +256,99 @@ export const useDiagram = ({
         loadEdit();
     }, [editDiagramId, serverStorageAvailable, isEditUrl, coreIcons]);
 
-    // Sync icons
+    // Sync icons from packs when they are loaded/changed
     useEffect(() => {
-        if (isLoading) return; // Prevent syncing while a new diagram is loading
+        if (isLoading) return;
+
         const transformedLoaded = transformIconUrls(iconPackManager.loadedIcons);
-        setDiagramData(prev => ({
-            ...prev,
-            icons: [
-                ...transformedLoaded,
-                ...transformIconUrls((prev.icons || []).filter(icon => icon.collection === 'imported'))
-            ]
-        }));
+        setDiagramData(prev => {
+            // Only update if icons have actually changed to avoid render loops
+            const currentImported = (prev.icons || []).filter(icon => icon.collection === 'imported');
+            const newIcons = [...transformedLoaded, ...transformIconUrls(currentImported)];
+
+            // Simple check to see if we really need to update
+            if (JSON.stringify(newIcons) === JSON.stringify(prev.icons)) return prev;
+
+            return {
+                ...prev,
+                icons: newIcons
+            };
+        });
     }, [iconPackManager.loadedIcons, isLoading]);
 
     const loadDiagram = useCallback(async (diagram: SavedDiagram, skipUnsavedCheck = false) => {
         if (!skipUnsavedCheck && hasUnsavedChanges && !window.confirm('Vous avez des modifications non enregistrées. Continuer le chargement ?')) return;
 
+        const currentLoadId = ++loadIdRef.current;
         setIsLoading(true);
 
-        let loadedData = diagram.data;
-        // If it's a server diagram and we only have the shell (no title or empty items), fetch full data
-        if (storageManager.isServerStorage() && (!loadedData.title || (loadedData.title === 'Shell' && loadedData.items.length === 0))) {
-            try {
+        try {
+            console.log(`[useDiagram] Starting load for diagram: ${diagram.id}`);
+            let loadedData = diagram.data;
+
+            // 1. Fetch full data if we have a placeholder (Shell)
+            const isPlaceholder = !loadedData || !loadedData.views?.length || loadedData.title === 'Shell';
+            if (isPlaceholder) {
+                console.log(`[useDiagram] Placeholder detected, fetching full data...`);
                 const storage = storageManager.getStorage();
                 loadedData = await storage.loadDiagram(diagram.id);
-            } catch (e) {
-                console.error('Failed to fetch full data for server diagram:', e);
-                alert('Erreur lors du chargement des données depuis le serveur.');
-                return;
             }
-        }
 
-        await iconPackManager.loadPacksForDiagram(loadedData.items || []);
-        const mergedIcons = reconstructIcons(loadedData.items, loadedData.icons);
-        const dataWithIcons: DiagramData = {
-            ...loadedData,
-            title: loadedData.title || diagram.name || 'Diagramme sans titre',
-            items: loadedData.items || [],
-            views: loadedData.views || [],
-            icons: mergedIcons,
-            colors: loadedData.colors?.length ? loadedData.colors : DEFAULT_COLORS,
-            fitToView: loadedData.fitToView !== false
-        };
+            if (currentLoadId !== loadIdRef.current) return;
+            if (!loadedData) throw new Error('Données du diagramme introuvables');
 
-        setCurrentDiagram({
-            ...diagram,
-            data: dataWithIcons
-        });
-        setDiagramName(diagram.name);
-        setDiagramData(dataWithIcons);
-        setCurrentModel(dataWithIcons);
-        setFossflowKey(prev => prev + 1);
-        setHasUnsavedChanges(false);
+            // 2. IMPORTANT: Load required icon packs BEFORE the first render 
+            // This avoids the "empty diagram" look and reduces re-renders
+            console.log(`[useDiagram] Pre-loading icon packs...`);
+            const currentPackIcons = await iconPackManager.loadPacksForDiagram(loadedData.items || []);
 
-        try {
+            if (currentLoadId !== loadIdRef.current) return;
+
+            // 3. Prepare full data
+            const finalIcons = reconstructIcons(loadedData.items, loadedData.icons, currentPackIcons);
+            const fullData: DiagramData = {
+                ...loadedData,
+                title: loadedData.title || diagram.name || 'Diagramme sans titre',
+                items: loadedData.items || [],
+                views: loadedData.views || [],
+                icons: finalIcons,
+                colors: loadedData.colors?.length ? loadedData.colors : DEFAULT_COLORS,
+                fitToView: loadedData.fitToView !== false
+            };
+
+            // 4. Atomic state update
+            console.log(`[useDiagram] Applying diagram data and key...`);
+            setDiagramName(diagram.name);
+            setDiagramData(fullData);
+            setCurrentModel(fullData);
+            setHasUnsavedChanges(false);
+            setCurrentDiagram({ ...diagram, data: fullData });
+
+            // Use a stable key that doesn't change on every micro-update, only on full load
+            setFossflowKey(`${diagram.id}-${Date.now()}`);
+
             localStorage.setItem('fossflow-last-opened', diagram.id);
-            const lastOpenedClean = { ...dataWithIcons };
+            const lastOpenedClean = { ...fullData };
             delete (lastOpenedClean as any).icons;
             delete (lastOpenedClean as any).colors;
             localStorage.setItem('fossflow-last-opened-data', JSON.stringify(lastOpenedClean));
+
+            // 5. Success - Unlock with a slight delay to let the new Editor mount settle
+            setTimeout(() => {
+                if (currentLoadId === loadIdRef.current) {
+                    setIsLoading(false);
+                    console.log(`[useDiagram] Load complete and UI unlocked.`);
+                }
+            }, 200);
+
         } catch (e) {
-            console.error('Failed to save last opened:', e);
-        } finally {
-            setIsLoading(false);
+            if (currentLoadId === loadIdRef.current) {
+                console.error('[useDiagram] Failed to load diagram:', e);
+                alert(`Erreur lors du chargement : ${e instanceof Error ? e.message : 'Erreur inconnue'}`);
+                setIsLoading(false);
+            }
         }
-    }, [hasUnsavedChanges, iconPackManager, coreIcons, serverStorageAvailable]);
+    }, [hasUnsavedChanges, iconPackManager, coreIcons, reconstructIcons]);
 
     // Unified list loading
     const refreshDiagramList = useCallback(async () => {
@@ -443,28 +496,45 @@ export const useDiagram = ({
     }, [currentDiagram]);
 
     const newDiagram = useCallback(() => {
-        const message = hasUnsavedChanges ? 'Vous avez des modifications non enregistrées. Exportez d\'abord votre diagramme pour l\'enregistrer. Continuer ?' : 'Créer un nouveau diagramme ?';
+        const message = hasUnsavedChanges ? 'Vous avez des modifications non enregistrées. Créer quand même un nouveau diagramme ?' : 'Créer un nouveau diagramme ?';
         if (window.confirm(message)) {
+            // Aggressive clearing: we want to start 100% fresh if they ask for a new diagram
+            localStorage.removeItem('fossflow-last-opened');
+            localStorage.removeItem('fossflow-last-opened-data');
+            localStorage.removeItem('fossflow-last-opened-id'); // Potential other key
+
             const emptyDiagram: DiagramData = {
                 title: 'Diagramme sans titre',
-                icons: iconPackManager.loadedIcons,
+                icons: transformIconUrls(coreIcons),
                 colors: DEFAULT_COLORS,
                 items: [],
                 views: [],
                 fitToView: true
             };
+
             setCurrentDiagram(null);
             setDiagramName('');
             setDiagramData(emptyDiagram);
             setCurrentModel(emptyDiagram);
-            setFossflowKey(prev => prev + 1);
             setHasUnsavedChanges(false);
-            localStorage.removeItem('fossflow-last-opened');
-            localStorage.removeItem('fossflow-last-opened-data');
+            setFossflowKey(`new-${Date.now()}`);
         }
-    }, [hasUnsavedChanges, iconPackManager.loadedIcons, coreIcons]);
+    }, [hasUnsavedChanges, coreIcons]);
 
     const handleModelUpdated = useCallback((model: any) => {
+        // Prevent updates if we are currently loading or starting
+        if (isLoading) return;
+
+        // Prevent updates if the incoming model is essentially empty but we have actual data
+        // This is the most common cause of "disappearing diagrams" after load
+        const hasIncomingData = model.items?.length || model.views?.some((v: any) => v.connectors?.length || v.rectangles?.length || v.textBoxes?.length);
+        const hasCurrentData = currentModel?.items?.length || currentModel?.views?.some((v: any) => v.connectors?.length || v.rectangles?.length || v.textBoxes?.length);
+
+        if (!hasIncomingData && hasCurrentData) {
+            console.log('[useDiagram] Ignoring empty model update while keeping current data');
+            return;
+        }
+
         const updatedModel = {
             title: model.title || diagramName || 'Untitled',
             // Preserve current icons/colors if the update doesn't provide them
@@ -532,7 +602,7 @@ export const useDiagram = ({
             fitToView: loadedData.fitToView !== false
         };
 
-        const newDiagram = {
+        const editDiagram: SavedDiagram = {
             id,
             name: data.name || 'Loaded Diagram',
             data: mergedData,
@@ -540,13 +610,9 @@ export const useDiagram = ({
             updatedAt: data.lastModified || new Date().toISOString()
         };
 
-        setDiagramName(newDiagram.name);
-        setCurrentDiagram(newDiagram);
-        setCurrentModel(mergedData);
-        setDiagramData(mergedData);
-        setFossflowKey(prev => prev + 1);
-        setIsLoading(false);
-    }, [iconPackManager, coreIcons, serverStorageAvailable]);
+        // Use the standardized loadDiagram logic to ensure consistency
+        await loadDiagram(editDiagram, true);
+    }, [loadDiagram]);
 
     // Auto-save effect
     useEffect(() => {
@@ -599,6 +665,7 @@ export const useDiagram = ({
         handleModelUpdated,
         exportDiagram,
         handleDiagramManagerLoad,
+        resetToCleanState,
         currentModel,
         isLoading
     };

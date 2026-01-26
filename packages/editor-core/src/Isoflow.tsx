@@ -31,7 +31,7 @@ const App = (props: IsoflowProps) => {
   const uiStateActions = useUiStateStore((state) => {
     return state.actions;
   });
-  const initialDataManager = useInitialDataManager();
+  const initialDataManager = useInitialDataManager(props.onLoadError);
   const model = useModelStore((state) => {
     return modelFromModelStore(state);
   });

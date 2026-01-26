@@ -235,4 +235,5 @@ export interface IsoflowProps {
   onServerStorage?: () => void;
   isModified?: boolean;
   diagramName?: string;
+  onLoadError?: (error: any) => void;
 }

@@ -49,9 +49,15 @@ export const IsometricIcon = ({ url, scale = 1, isImported, onImageLoaded }: Pro
         // Let's stick to the previous heuristic but make it scale-aware.
         // The previous fixed offset (PROJECTED_TILE_SIZE.height / 2) was wrong when scaling.
         // We want the visual bottom of the content to be near the tile center.
-        // For square icons, simply centering them vertically on the tile center (0,0) is usually best.
-        // Since top: -size.height puts the bottom at 0, top: -size.height/2 puts the center at 0.
-        top: isImported ? -size.height / 2 : -size.height,
+        // We want the CENTER of the image to align with the CENTER of the tile.
+        // The container origin (0,0) is at the BOTTOM corner of the tile.
+        // The tile center is half a tile height ABOVE the bottom corner (y = -TileHeight/2).
+        // So we want ImageCenterY = -TileHeight/2.
+        // ImageTop = ImageCenterY - ImageHeight/2.
+        // ImageTop = (-TileHeight/2) - (ImageHeight/2).
+        top: isImported
+          ? -(PROJECTED_TILE_SIZE.height / 2) - (size.height / 2)
+          : -size.height,
         left: -size.width / 2,
         pointerEvents: 'none'
       }}

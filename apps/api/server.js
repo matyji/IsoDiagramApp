@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import puppeteer from 'puppeteer';
 import multer from 'multer';
+import { validateDiagram } from './validator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,9 +50,11 @@ console.log(`[BOOT] STORAGE_PATH: ${STORAGE_PATH}`);
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// Simple request logger
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+// Middleware to prevent caching for API requests
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   next();
 });
 
@@ -186,6 +189,27 @@ if (STORAGE_ENABLED) {
     }
   });
 
+  // Get raw diagram JSON by ID
+  app.get('/api/get-diagram-json/:id', async (req, res) => {
+    const diagramId = req.params.id;
+    console.log(`[GET /api/get-diagram-json/${diagramId}] Fetching raw JSON...`);
+
+    try {
+      const filePath = path.join(STORAGE_PATH, `${diagramId}.json`);
+      const content = await fs.readFile(filePath, 'utf-8');
+      const data = JSON.parse(content);
+
+      res.json(data);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        res.status(404).json({ error: 'Diagram JSON not found' });
+      } else {
+        console.error(`[GET /api/get-diagram-json/${diagramId}] Error:`, error);
+        res.status(500).json({ error: 'Failed to fetch diagram JSON' });
+      }
+    }
+  });
+
   // Open specific diagram in the editor
   app.get('/api/diagrams/:id/open', (req, res) => {
     const { id } = req.params;
@@ -206,6 +230,16 @@ if (STORAGE_ENABLED) {
     console.log(`[PUT /api/diagrams/${diagramId}] Saving diagram...`);
 
     try {
+      // Validate diagram data before saving
+      const validation = validateDiagram(req.body);
+      if (!validation.success) {
+        console.warn(`[PUT /api/diagrams/${diagramId}] Validation failed:`, validation.errors);
+        return res.status(400).json({
+          error: 'Model validation failed',
+          details: validation.errors
+        });
+      }
+
       const filePath = path.join(STORAGE_PATH, `${diagramId}.json`);
       const data = {
         ...req.body,
@@ -254,6 +288,16 @@ if (STORAGE_ENABLED) {
   // Create a new diagram
   app.post('/api/diagrams', async (req, res) => {
     try {
+      // Validate diagram data before creating
+      const validation = validateDiagram(req.body);
+      if (!validation.success) {
+        console.warn('[POST /api/diagrams] Validation failed:', validation.errors);
+        return res.status(400).json({
+          error: 'Model validation failed',
+          details: validation.errors
+        });
+      }
+
       const id = req.body.id || `diagram_${Date.now()}`;
       const filePath = path.join(STORAGE_PATH, `${id}.json`);
 
@@ -290,6 +334,16 @@ if (STORAGE_ENABLED) {
 
       if (!diagramContent || (Array.isArray(diagramContent) && diagramContent.length === 0)) {
         return res.status(400).json({ error: 'Invalid or missing diagram data' });
+      }
+
+      // Validate diagram data before importing
+      const validation = validateDiagram(diagramContent);
+      if (!validation.success) {
+        console.warn('[IMPORT] Validation failed:', validation.errors);
+        return res.status(400).json({
+          error: 'Model validation failed during import',
+          details: validation.errors
+        });
       }
 
       const id = `import_${Date.now()}`;

@@ -14,6 +14,7 @@ export interface StorageService {
   saveDiagram(id: string, data: Model): Promise<void>;
   deleteDiagram(id: string): Promise<void>;
   createDiagram(data: Model): Promise<string>;
+  importDiagram(name: string, data: Model): Promise<{ id: string, name: string }>;
 }
 
 // Server Storage Implementation
@@ -116,9 +117,13 @@ class ServerStorage implements StorageService {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`ServerStorage: Failed to save diagram ${id}: ${response.status} ${errorText}`);
-        throw new Error(`Failed to save diagram: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`ServerStorage: Failed to save diagram ${id}:`, errorData);
+
+        if (errorData.details) {
+          throw new Error(`Validation failed:\n${errorData.details.join('\n')}`);
+        }
+        throw new Error(errorData.error || `Failed to save diagram: ${response.status}`);
       }
 
       console.log(`ServerStorage: Successfully saved diagram ${id}`);
@@ -141,9 +146,33 @@ class ServerStorage implements StorageService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!response.ok) throw new Error('Failed to create diagram');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (errorData.details) {
+        throw new Error(`Validation failed:\n${errorData.details.join('\n')}`);
+      }
+      throw new Error(errorData.error || 'Failed to create diagram');
+    }
     const result = await response.json();
     return result.id;
+  }
+
+  async importDiagram(name: string, data: Model): Promise<{ id: string, name: string }> {
+    const response = await fetch(`${this.baseUrl}/api/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, data })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      if (errorData.details) {
+        throw new Error(`Validation failed during import:\n${errorData.details.join('\n')}`);
+      }
+      throw new Error(errorData.error || 'Failed to import diagram');
+    }
+
+    return await response.json();
   }
 }
 
@@ -222,6 +251,13 @@ class LocalStorageProvider implements StorageService {
     const id = `diagram_${Date.now()}`;
     await this.saveDiagram(id, data);
     return id;
+  }
+
+  async importDiagram(name: string, data: Model): Promise<{ id: string, name: string }> {
+    const id = `import_${Date.now()}`;
+    const dataWithName = { ...data, name };
+    await this.saveDiagram(id, dataWithName);
+    return { id, name };
   }
 }
 

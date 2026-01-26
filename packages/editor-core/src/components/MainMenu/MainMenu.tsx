@@ -76,16 +76,21 @@ export const MainMenu = () => {
       const fileReader = new FileReader();
 
       fileReader.onload = async (e) => {
-        const rawData = JSON.parse(e.target?.result as string);
-        let modelData = rawData;
+        try {
+          const rawData = JSON.parse(e.target?.result as string);
+          let modelData = rawData;
 
-        // Check format and transform if needed
-        if (rawData._?.f === 'compact') {
-          modelData = transformFromCompactFormat(rawData);
+          // Check format and transform if needed
+          if (rawData._?.f === 'compact') {
+            modelData = transformFromCompactFormat(rawData);
+          }
+
+          load(modelData);
+          clearHistory(); // Clear history when loading new model
+        } catch (err) {
+          console.error('Failed to parse diagram JSON:', err);
+          window.alert('Le fichier sélectionné n\'est pas un JSON valide ou est corrompu.');
         }
-
-        load(modelData);
-        clearHistory(); // Clear history when loading new model
       };
       fileReader.readAsText(file);
 

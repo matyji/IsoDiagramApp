@@ -14,7 +14,7 @@ import { useView } from 'src/hooks/useView';
 import { useUiStateStore } from 'src/stores/uiStateStore';
 import { modelSchema } from 'src/schemas/model';
 
-export const useInitialDataManager = () => {
+export const useInitialDataManager = (onLoadError?: (error: any) => void) => {
   const [isReady, setIsReady] = useState(false);
   const prevInitialData = useRef<InitialData>();
   const model = useModelStore((state) => {
@@ -59,10 +59,32 @@ export const useInitialDataManager = () => {
       const validationResult = modelSchema.safeParse(_initialData);
 
       if (!validationResult.success) {
-        // TODO: let's get better at reporting error messages here (starting with how we present them to users)
-        // - not in console but in a modal
-        console.log(validationResult.error.errors);
-        window.alert('There is an error in your model.');
+        if (onLoadError) {
+          onLoadError(validationResult.error);
+        }
+        // Prevent infinite loops if INITIAL_DATA itself fails (should not happen but safety first)
+        const isDefaultData = _initialData.title === INITIAL_DATA.title && _initialData.items.length === 0;
+
+        if (isDefaultData) {
+          console.error('CRITICAL: Default data failed validation!');
+          return;
+        }
+
+        const errorMessages = validationResult.error.errors
+          .slice(0, 3)
+          .map((e) => `• ${e.path.join('.') || 'root'}: ${e.message}`)
+          .join('\n');
+
+        console.error('Model validation errors:', validationResult.error.errors);
+
+        window.alert(
+          `Erreur au chargement du modèle :\n${errorMessages}${validationResult.error.errors.length > 3 ? '\n... (et d\'autres)' : ''
+          }\n\nLe diagramme va être réinitialisé pour éviter un plantage.`
+        );
+
+        // Reset to initial data to prevent app crash
+        // We do this immediately to stop the current's load progress
+        clear();
         return;
       }
 

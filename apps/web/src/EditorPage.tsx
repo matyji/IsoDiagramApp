@@ -104,6 +104,7 @@ const EditorPage: React.FC = () => {
                     onServerStorage={() => setShowDiagramManager(true)}
                     isModified={diagram.hasUnsavedChanges}
                     diagramName={diagram.diagramName}
+                    onLoadError={diagram.resetToCleanState}
                     iconPackManager={{
                         lazyLoadingEnabled: iconPackManager.lazyLoadingEnabled,
                         onToggleLazyLoading: iconPackManager.toggleLazyLoading,

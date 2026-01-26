@@ -5,10 +5,13 @@ const packageJson = require('./package.json');
 
 module.exports = {
   mode: 'development',
-  entry: './src/index.ts',
+  entry: {
+    index: './src/index.ts',
+    standalone: './src/standaloneExports.ts'
+  },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'index.js',
+    filename: '[name].js',
     library: {
       type: 'commonjs2',
     },
