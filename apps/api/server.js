@@ -140,29 +140,7 @@ if (STORAGE_ENABLED) {
     }
   });
 
-  // Get all available icons (flat list of names)
-  app.get('/api/icons', async (req, res) => {
-    try {
-      const getNamesInDir = async (dirPath) => {
-        if (!existsSync(dirPath)) return [];
-        const files = await fs.readdir(dirPath);
-        return files
-          .filter(file => file.endsWith('.svg') || file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg'))
-          .map(file => file.split('.').slice(0, -1).join('.'));
-      };
 
-      const baseNames = await getNamesInDir(BASE_ASSETS_PATH);
-      const importedNames = await getNamesInDir(IMPORTED_ASSETS_PATH);
-
-      // Combine and remove duplicates
-      const allNames = Array.from(new Set([...baseNames, ...importedNames]));
-
-      res.json(allNames);
-    } catch (error) {
-      console.error('Error listing icons:', error);
-      res.status(500).json({ error: 'Failed to list icons' });
-    }
-  });
 
   // Get specific diagram
   app.get('/api/diagrams/:id', async (req, res) => {
@@ -189,40 +167,9 @@ if (STORAGE_ENABLED) {
     }
   });
 
-  // Get raw diagram JSON by ID
-  app.get('/api/get-diagram-json/:id', async (req, res) => {
-    const diagramId = req.params.id;
-    console.log(`[GET /api/get-diagram-json/${diagramId}] Fetching raw JSON...`);
 
-    try {
-      const filePath = path.join(STORAGE_PATH, `${diagramId}.json`);
-      const content = await fs.readFile(filePath, 'utf-8');
-      const data = JSON.parse(content);
 
-      res.json(data);
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        res.status(404).json({ error: 'Diagram JSON not found' });
-      } else {
-        console.error(`[GET /api/get-diagram-json/${diagramId}] Error:`, error);
-        res.status(500).json({ error: 'Failed to fetch diagram JSON' });
-      }
-    }
-  });
 
-  // Open specific diagram in the editor
-  app.get('/api/diagrams/:id/open', (req, res) => {
-    const { id } = req.params;
-    console.log(`[GET /api/diagrams/${id}/open] Redirecting to editor...`);
-    res.redirect(`/edit/${id}`);
-  });
-
-  // Open specific diagram in readonly mode
-  app.get('/api/diagrams/:id/display', (req, res) => {
-    const { id } = req.params;
-    console.log(`[GET /api/diagrams/${id}/display] Redirecting to readonly view...`);
-    res.redirect(`/display/${id}`);
-  });
 
   // Save or update diagram
   app.put('/api/diagrams/:id', async (req, res) => {
@@ -372,51 +319,7 @@ if (STORAGE_ENABLED) {
     }
   });
 
-  /**
-   * Export Image endpoint
-   */
-  app.get('/api/export/:id', async (req, res) => {
-    const { id } = req.params;
-    const format = req.query.format || 'png';
-    const scale = parseFloat(req.query.scale) || 2;
 
-    try {
-      const filePath = path.join(STORAGE_PATH, `${id}.json`);
-      await fs.access(filePath);
-
-      const host = process.env.WEB_APP_URL || 'http://localhost:3000';
-      const exportUrl = `${host}/display/${id}?export=true`;
-
-      const browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-
-      try {
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: scale });
-        await page.goto(exportUrl, { waitUntil: 'load', timeout: 60000 });
-        await page.waitForSelector('[data-is-ready="true"]', { timeout: 30000 });
-        await new Promise(r => setTimeout(r, 3000));
-
-        const element = await page.$('[data-is-ready="true"]');
-        if (!element) throw new Error('Diagram container not found');
-
-        const imageBuffer = await element.screenshot({ type: 'png', omitBackground: true });
-        await browser.close();
-
-        res.set('Content-Type', 'image/png');
-        res.set('Content-Disposition', `attachment; filename="export-${id}.png"`);
-        res.send(imageBuffer);
-      } catch (err) {
-        await browser.close();
-        throw err;
-      }
-    } catch (error) {
-      console.error('[EXPORT] Error:', error);
-      res.status(500).json({ error: 'Export failed', details: error.message });
-    }
-  });
 
 }
 

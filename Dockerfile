@@ -3,25 +3,6 @@ FROM node:20-slim AS build
 
 WORKDIR /app
 
-# Copy package management files
-COPY package.json ./
-COPY apps/web/package.json ./apps/web/
-COPY apps/api/package.json ./apps/api/
-COPY packages/editor-core/package.json ./packages/editor-core/
-
-# Install dependencies including dev dependencies for build
-RUN npm install
-
-# Copy source code
-COPY . .
-
-# Build library, then web
-RUN npm run build:lib
-RUN npm run build:web
-
-# Production Stage
-FROM node:20-slim
-
 # Install Puppeteer dependencies (Chrome/Chromium runtime)
 RUN apt-get update && apt-get install -y \
     ca-certificates \
@@ -63,26 +44,30 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Install chromium browser binary
 # Install chromium
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy source code
+COPY . .
 
-WORKDIR /app
+# Install (workspaces) + build
+RUN npm install
+RUN npm run build:lib
+RUN npm run install --workspaces --include-workspace-root
+RUN npm run build:web
+RUN npm run build:mcp
 
-# Copy built assets and necessary files
-COPY --from=build /app/package.json ./
-COPY --from=build /app/apps/api ./apps/api
-COPY --from=build /app/apps/web/build ./apps/web/build
-COPY --from=build /app/node_modules ./node_modules
+# Netoyagge : enlever les dev dependencies (image plus légère)
+ENV NODE_ENV=production
+RUN npm prune --omit=dev
 
+# Puppeteer
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-# Default environment configuration
-ENV NODE_ENV=production
+# App env
 ENV BACKEND_PORT=3001
 ENV ENABLE_SERVER_STORAGE=true
 ENV STORAGE_PATH=/app/apps/api/data/diagrams
