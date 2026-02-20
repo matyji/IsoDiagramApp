@@ -178,6 +178,232 @@ server.registerTool(
     }
 );
 
+// -------------------------------------------------------------
+// NEW TOOLS FOR API ENDPOINTS
+// -------------------------------------------------------------
+
+server.registerTool(
+    "get_storage_status",
+    { description: "Check if local storage and git backup are enabled" },
+    async () => {
+        return {
+            content: [{
+                type: "text",
+                text: JSON.stringify({
+                    enabled: process.env.ENABLE_SERVER_STORAGE === 'true',
+                    gitBackup: process.env.ENABLE_GIT_BACKUP === 'true',
+                    version: '1.0.0'
+                }, null, 2)
+            }]
+        };
+    }
+);
+
+server.registerTool(
+    "list_diagrams",
+    { description: "List all available diagrams in local storage" },
+    async () => {
+        try {
+            if (!existsSync(STORAGE_PATH)) {
+                return { content: [{ type: "text", text: "[]" }] };
+            }
+
+            const files = await fs.readdir(STORAGE_PATH);
+            const diagrams = [];
+
+            for (const file of files) {
+                if (file.endsWith('.json') && file !== 'metadata.json') {
+                    try {
+                        const filePath = path.join(STORAGE_PATH, file);
+                        const stats = await fs.stat(filePath);
+                        const content = await fs.readFile(filePath, 'utf-8');
+                        const data = JSON.parse(content);
+
+                        const name = data.name || data.title || 'Untitled Diagram';
+
+                        diagrams.push({
+                            id: file.replace('.json', ''),
+                            name: name,
+                            lastModified: stats.mtime,
+                            size: stats.size
+                        });
+                    } catch (fileError) {
+                        continue;
+                    }
+                }
+            }
+
+            return {
+                content: [{ type: "text", text: JSON.stringify(diagrams, null, 2) }]
+            };
+        } catch (error: any) {
+            return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+        }
+    }
+);
+
+server.registerTool(
+    "create_diagram",
+    {
+        description: "Create a new diagram from JSON data",
+        inputSchema: {
+            data: z.record(z.any()).describe("The complete JSON data of the diagram"),
+            id: z.string().optional().describe("Optional ID for the new diagram. If omitted, one will be generated.")
+        }
+    },
+    async ({ data, id }) => {
+        try {
+            const diagramId = id || `diagram_${Date.now()}`;
+            const filePath = path.join(STORAGE_PATH, `${diagramId}.json`);
+
+            if (existsSync(filePath)) {
+                return { content: [{ type: "text", text: "Error: Diagram already exists" }], isError: true };
+            }
+
+            const finalData = {
+                ...data,
+                id: diagramId,
+                created: new Date().toISOString(),
+                lastModified: new Date().toISOString()
+            };
+
+            await fs.writeFile(filePath, JSON.stringify(finalData, null, 2));
+            return { content: [{ type: "text", text: `Diagram created successfully. ID: ${diagramId}` }] };
+        } catch (error: any) {
+            return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+        }
+    }
+);
+
+server.registerTool(
+    "update_diagram",
+    {
+        description: "Save or update an existing diagram with new JSON data",
+        inputSchema: {
+            id: z.string().describe("The ID of the diagram to update"),
+            data: z.record(z.any()).describe("The complete new JSON data for the diagram")
+        }
+    },
+    async ({ id, data }) => {
+        try {
+            const filePath = path.join(STORAGE_PATH, `${id}.json`);
+
+            const finalData = {
+                ...data,
+                id: id,
+                lastModified: new Date().toISOString()
+            };
+
+            await fs.writeFile(filePath, JSON.stringify(finalData, null, 2));
+            return { content: [{ type: "text", text: `Diagram ${id} successfully updated.` }] };
+        } catch (error: any) {
+            return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+        }
+    }
+);
+
+server.registerTool(
+    "delete_diagram",
+    {
+        description: "Delete a diagram by its ID",
+        inputSchema: {
+            id: z.string().describe("The ID of the diagram to delete")
+        }
+    },
+    async ({ id }) => {
+        try {
+            const filePath = path.join(STORAGE_PATH, `${id}.json`);
+            if (!existsSync(filePath)) {
+                return { content: [{ type: "text", text: "Error: Diagram not found" }], isError: true };
+            }
+            await fs.unlink(filePath);
+            return { content: [{ type: "text", text: `Diagram ${id} deleted successfully.` }] };
+        } catch (error: any) {
+            return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+        }
+    }
+);
+
+server.registerTool(
+    "import_diagram",
+    {
+        description: "Import a JSON diagram data into the system as a newly saved diagram",
+        inputSchema: {
+            name: z.string().optional().describe("Optional name of the imported diagram"),
+            data: z.record(z.any()).describe("The diagram JSON data to import")
+        }
+    },
+    async ({ name, data }) => {
+        try {
+            const id = `import_${Date.now()}`;
+            const filePath = path.join(STORAGE_PATH, `${id}.json`);
+
+            const finalData = {
+                ...data,
+                id,
+                name: name || data.name || 'Imported Diagram',
+                lastModified: new Date().toISOString(),
+                created: data.created || new Date().toISOString()
+            };
+
+            await fs.writeFile(filePath, JSON.stringify(finalData, null, 2));
+            return { content: [{ type: "text", text: `Diagram imported and saved successfully. ID: ${id}` }] };
+        } catch (error: any) {
+            return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+        }
+    }
+);
+
+server.registerTool(
+    "upload_icon",
+    {
+        description: "Upload a new base64 image icon to the server, and returns the URL. Provide only the pure base64 string.",
+        inputSchema: {
+            name: z.string().describe("The name of the icon (it will sanitize this automatically to form the filename)"),
+            base64Data: z.string().describe("The base64 encoded image data (e.g. iVBORw0KGgo...)"),
+            extension: z.string().default(".png").describe("The file extension (e.g. .png, .svg)")
+        }
+    },
+    async ({ name, base64Data, extension }) => {
+        try {
+            // 1. Decode base64 
+            // sometimes ai passes "data:image/png;base64,iVBORw..." -> split the header
+            let dataToDecode = base64Data;
+            if (base64Data.includes("base64,")) {
+                dataToDecode = base64Data.split("base64,")[1];
+            }
+            const buffer = Buffer.from(dataToDecode, 'base64');
+
+            // 2. Sanitize name and build path
+            const sanitized = name.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
+            let ext = extension.startsWith('.') ? extension : `.${extension}`;
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+
+            const fileName = sanitized ? `${sanitized}${ext}` : `icon-${uniqueSuffix}${ext}`;
+            const filePath = path.join(IMPORTED_ASSETS_PATH, fileName);
+
+            // 3. Save
+            await fs.writeFile(filePath, buffer);
+
+            // 4. Resulting URL
+            const fileUrl = `/assets/imported/${fileName}`;
+
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: true,
+                        url: fileUrl,
+                        filename: fileName
+                    }, null, 2)
+                }]
+            };
+        } catch (error: any) {
+            return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+        }
+    }
+);
+
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
