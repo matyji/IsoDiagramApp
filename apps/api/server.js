@@ -64,32 +64,42 @@ app.use('/api', (req, res, next) => {
 // ----------------------------------------------------------------------------------
 // MCP SERVER ROUTE
 // ----------------------------------------------------------------------------------
-// In order to allow multiple independent AI client connections (sessions), 
-// we must establish a new Transport instance per SSE requested session, 
-// rather than globally.
+const mcpSessions = new Map();
 
-// ----------------------------------------------------------------------------------
-// MCP SERVER ROUTE
-// ----------------------------------------------------------------------------------
-// Create a SINGLE global transport. StreamableHTTPServerTransport manages 
-// multiple client sessions internally based on the UUID generator.
-const mcpTransport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: () => crypto.randomUUID(),
-});
-
-// Connect it to the MCP server exactly ONCE.
-mcpServer.connect(mcpTransport).then(() => {
-  console.log('[BOOT] MCP Streamable Transport connected successfully.');
-}).catch(err => {
-  console.error('[BOOT] Failed to connect MCP transport:', err);
-});
-
-// Let the transport handle ALL GET (SSE) and POST (Messages) arriving at /mcp...
-app.use('/mcp', async (req, res) => {
+app.get('/mcp', async (req, res) => {
   try {
-    await mcpTransport.handleRequest(req, res, req.body);
+    const sessionId = crypto.randomUUID();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => sessionId,
+    });
+
+    const serverInstance = createMcpServer();
+    await serverInstance.connect(transport);
+
+    res.on('close', () => {
+      mcpSessions.delete(sessionId);
+      try { serverInstance.close(); } catch (e) { }
+    });
+
+    mcpSessions.set(sessionId, transport);
+    await transport.handleRequest(req, res);
   } catch (err) {
-    console.error('[MCP] Request Error:', err);
+    console.error('[MCP] GET Error:', err);
+  }
+});
+
+app.post('/mcp', async (req, res) => {
+  try {
+    const sessionId = req.query.sessionId;
+    const transport = mcpSessions.get(sessionId);
+
+    if (!transport) {
+      return res.status(404).json({ error: 'Session not found or expired. Run GET /mcp first.' });
+    }
+
+    await transport.handleRequest(req, res, req.body);
+  } catch (err) {
+    console.error('[MCP] POST Error:', err);
   }
 });
 // ----------------------------------------------------------------------------------
