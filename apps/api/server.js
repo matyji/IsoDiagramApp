@@ -64,21 +64,33 @@ app.use('/api', (req, res, next) => {
 // ----------------------------------------------------------------------------------
 // MCP SERVER ROUTE
 // ----------------------------------------------------------------------------------
-const mcpTransport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: () => crypto.randomUUID()
-});
-// Link MCP Transport to the server once at startup
-mcpServer.connect(mcpTransport).then(() => {
-  console.log('[BOOT] MCP Streamable Transport initialized on /mcp');
-}).catch(err => {
-  console.error('[BOOT] Failed to initialize MCP Transport', err);
+// In order to allow multiple independent AI client connections (sessions), 
+// we must establish a new Transport instance per SSE requested session, 
+// rather than globally.
+
+let transport;
+app.get('/mcp', async (req, res) => {
+  transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => crypto.randomUUID(),
+  });
+  await mcpServer.connect(transport);
+  await transport.handleRequest(req, res, req.body);
 });
 
-app.all('/mcp', async (req, res) => {
-  await mcpTransport.handleRequest(req, res, req.body);
+app.post('/mcp', async (req, res) => {
+  if (!transport) {
+    res.status(400).send('MCP Transport not connected (Run GET /mcp first)');
+    return;
+  }
+  await transport.handleRequest(req, res, req.body);
 });
+
 app.all('/mcp/*', async (req, res) => {
-  await mcpTransport.handleRequest(req, res, req.body);
+  if (transport) {
+    await transport.handleRequest(req, res, req.body);
+  } else {
+    res.status(400).send('MCP Transport not connected');
+  }
 });
 // ----------------------------------------------------------------------------------
 
