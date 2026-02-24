@@ -153,16 +153,15 @@ server.registerTool(
                 const imageBuffer = await element.screenshot({ type: "png", omitBackground: true });
                 await browser.close();
 
-                // Save image locally to disk instead of returning via express download stream
-                // That way the AI can tell the user the precise local path of the export
-                const imgPath = path.join(STORAGE_PATH, `export-${id}.png`);
-                await fs.writeFile(imgPath, imageBuffer);
+                // Return the image as base64 so the MCP client can save it locally on its side
+                const base64Data = Buffer.from(imageBuffer).toString('base64');
 
                 return {
                     content: [
                         {
-                            type: "text",
-                            text: `Diagram exported successfully! The PNG image has been saved to: ${imgPath}`
+                            type: "image",
+                            data: base64Data,
+                            mimeType: "image/png"
                         }
                     ],
                 };
