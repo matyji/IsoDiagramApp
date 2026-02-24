@@ -64,43 +64,46 @@ app.use('/api', (req, res, next) => {
 // MCP SERVER ROUTE
 // ----------------------------------------------------------------------------------
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { createMcpServer } from '../mcp/dist/index.js';
 
-let mcpTransport = null;
+// Map to cleanly isolate AI agents calling MCP concurrently
+const mcpSessions = new Map();
 
 app.get('/mcp', async (req, res) => {
-  console.log('[MCP] New client connection initializing via GET /mcp...');
+  const sessionId = crypto.randomUUID();
+  console.log(`[MCP] New client initialized SSE stream via GET /mcp (Session: ${sessionId})`);
 
-  // 1. Close the previous session if the script was killed/restarted
-  if (mcpTransport) {
-    try {
-      await mcpTransport.close();
-    } catch (e) {
-      /* ignore */
-    }
-  }
+  // Instanciate our specific POST endpoint URL explicitly with the session ID
+  const transport = new SSEServerTransport(`/mcp/messages?sessionId=${sessionId}`, res);
 
-  // 2. Create a new SSE Transport pointing explicitly to our POST endpoint
-  mcpTransport = new SSEServerTransport('/mcp/messages', res);
+  // Create a brand NEW independent McpServer for this client
+  const localMcpServer = createMcpServer();
 
-  // 3. Re-inject our main MCP server brain into this new pipe
-  await mcpServer.connect(mcpTransport).catch(err => {
-    console.error('[MCP] Failed to connect transport:', err);
+  await localMcpServer.connect(transport).catch(err => {
+    console.error(`[MCP] Failed to connect transport for session ${sessionId}:`, err);
   });
 
-  res.on('close', () => {
-    console.log('[MCP] SSE Connection closed by client');
+  mcpSessions.set(sessionId, { transport, server: localMcpServer });
+
+  req.on('close', () => {
+    console.log(`[MCP] Connection closed by client (Session: ${sessionId})`);
+    mcpSessions.delete(sessionId);
+    transport.close().catch(() => { });
   });
 });
 
 app.post('/mcp/messages', async (req, res) => {
-  if (!mcpTransport) {
-    return res.status(400).json({ error: 'No active MCP SSE session. Make a GET to /mcp first.' });
+  const sessionId = req.query.sessionId;
+  const session = mcpSessions.get(sessionId);
+
+  if (!session) {
+    return res.status(400).json({ error: 'No active MCP SSE session. Make a GET to /mcp first to initialize a stream.' });
   }
 
   try {
-    await mcpTransport.handlePostMessage(req, res, req.body);
+    await session.transport.handlePostMessage(req, res, req.body);
   } catch (err) {
-    console.error('[MCP] Failed to handle message:', err);
+    console.error(`[MCP] Failed to handle message for session ${sessionId}:`, err);
   }
 });
 // ----------------------------------------------------------------------------------
