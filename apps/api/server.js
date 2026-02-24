@@ -9,8 +9,8 @@ import puppeteer from 'puppeteer';
 import multer from 'multer';
 import { validateDiagram } from './validator.js';
 import crypto from 'crypto';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { createMcpServer } from '../mcp/dist/index.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { mcpServer } from '../mcp/dist/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,51 +64,39 @@ app.use('/api', (req, res, next) => {
 // ----------------------------------------------------------------------------------
 // MCP SERVER ROUTE
 // ----------------------------------------------------------------------------------
-const mcpSessions = new Map();
-
-// 1. Initialisation SSE (L'agent s'abonne et reçoit l'URL où il doit poster via un event)
-app.get('/mcp', async (req, res) => {
-  try {
-    const sessionId = crypto.randomUUID();
-    // On indique au client qu'il devra envoyer les réponses du LLM sur cette URL unique
-    const messageEndpoint = `/mcp/messages?sessionId=${sessionId}`;
-
-    // Le transport attache nativement l'objet response Express au flux SSE
-    const transport = new SSEServerTransport(messageEndpoint, res);
-    const serverInstance = createMcpServer();
-
-    mcpSessions.set(sessionId, transport);
-
-    // D'abord on démarre le flux HTTP pour envoyer les headers SSE
-    await transport.start();
-
-    // Ensuite on connecte logiquement le serveur au flux
-    await serverInstance.connect(transport);
-
-    res.on('close', () => {
-      // Nettoyage garanti quand le client (Agno) fait ctrl-c ou coupe
-      mcpSessions.delete(sessionId);
-      try { serverInstance.close(); } catch (e) { }
-    });
-
-  } catch (err) {
-    console.error('[MCP] GET Error:', err);
-  }
+// Create a SINGLE global transport. StreamableHTTPServerTransport manages 
+// multiple client sessions internally based on the UUID generator.
+const mcpTransport = new StreamableHTTPServerTransport({
+  sessionIdGenerator: () => crypto.randomUUID(),
 });
 
-// 2. Réception des commandes de l'agent
-app.post('/mcp/messages', async (req, res) => {
+// Connect it to the MCP server exactly ONCE.
+mcpServer.connect(mcpTransport).then(() => {
+  console.log('[BOOT] MCP Streamable Transport connected successfully.');
+}).catch(err => {
+  console.error('[BOOT] Failed to connect MCP transport:', err);
+});
+
+// Let the transport handle ALL GET (SSE) and POST (Messages) arriving at /mcp...
+app.use('/mcp', async (req, res) => {
+  // Disable timeouts and force flush for Server-Sent Events
+  req.setTimeout(0);
+  res.socket?.setTimeout(0);
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Bypass Nginx/proxies buffering
+
+  req.on('close', () => {
+    console.log(`[MCP] Connection closed by client (Session cleaned up)`);
+  });
+
   try {
-    const sessionId = req.query.sessionId;
-    const transport = mcpSessions.get(sessionId);
-
-    if (!transport) {
-      return res.status(404).json({ error: 'Session MCP non trouvée ou expirée.' });
-    }
-
-    await transport.handlePostMessage(req, res, req.body);
+    await mcpTransport.handleRequest(req, res, req.body);
   } catch (err) {
-    console.error('[MCP] POST Error:', err);
+    console.error('[MCP] Request Error:', err);
+    if (!res.headersSent) {
+      res.status(500).send('MCP Transport Error');
+    }
   }
 });
 // ----------------------------------------------------------------------------------
