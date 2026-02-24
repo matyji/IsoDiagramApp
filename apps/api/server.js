@@ -9,7 +9,6 @@ import puppeteer from 'puppeteer';
 import multer from 'multer';
 import { validateDiagram } from './validator.js';
 import crypto from 'crypto';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { mcpServer } from '../mcp/dist/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -64,39 +63,44 @@ app.use('/api', (req, res, next) => {
 // ----------------------------------------------------------------------------------
 // MCP SERVER ROUTE
 // ----------------------------------------------------------------------------------
-// Create a SINGLE global transport. StreamableHTTPServerTransport manages 
-// multiple client sessions internally based on the UUID generator.
-const mcpTransport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: () => crypto.randomUUID(),
-});
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 
-// Connect it to the MCP server exactly ONCE.
-mcpServer.connect(mcpTransport).then(() => {
-  console.log('[BOOT] MCP Streamable Transport connected successfully.');
-}).catch(err => {
-  console.error('[BOOT] Failed to connect MCP transport:', err);
-});
+let mcpTransport = null;
 
-// Let the transport handle ALL GET (SSE) and POST (Messages) arriving at /mcp...
-app.use('/mcp', async (req, res) => {
-  // Disable timeouts and force flush for Server-Sent Events
-  req.setTimeout(0);
-  res.socket?.setTimeout(0);
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // Bypass Nginx/proxies buffering
+app.get('/mcp', async (req, res) => {
+  console.log('[MCP] New client connection initializing via GET /mcp...');
 
-  req.on('close', () => {
-    console.log(`[MCP] Connection closed by client (Session cleaned up)`);
+  // 1. Close the previous session if the script was killed/restarted
+  if (mcpTransport) {
+    try {
+      await mcpTransport.close();
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  // 2. Create a new SSE Transport pointing explicitly to our POST endpoint
+  mcpTransport = new SSEServerTransport('/mcp/messages', res);
+
+  // 3. Re-inject our main MCP server brain into this new pipe
+  await mcpServer.connect(mcpTransport).catch(err => {
+    console.error('[MCP] Failed to connect transport:', err);
   });
 
+  res.on('close', () => {
+    console.log('[MCP] SSE Connection closed by client');
+  });
+});
+
+app.post('/mcp/messages', async (req, res) => {
+  if (!mcpTransport) {
+    return res.status(400).json({ error: 'No active MCP SSE session. Make a GET to /mcp first.' });
+  }
+
   try {
-    await mcpTransport.handleRequest(req, res, req.body);
+    await mcpTransport.handlePostMessage(req, res, req.body);
   } catch (err) {
-    console.error('[MCP] Request Error:', err);
-    if (!res.headersSent) {
-      res.status(500).send('MCP Transport Error');
-    }
+    console.error('[MCP] Failed to handle message:', err);
   }
 });
 // ----------------------------------------------------------------------------------
