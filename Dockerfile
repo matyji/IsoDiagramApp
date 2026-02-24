@@ -56,7 +56,6 @@ COPY . .
 RUN npm install
 RUN npm run build:lib
 RUN npm run build:web
-RUN npm run build:mcp
 
 # Netoyagge : enlever les dev dependencies (image plus légère)
 ENV NODE_ENV=production

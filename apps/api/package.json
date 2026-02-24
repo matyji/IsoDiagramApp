@@ -9,13 +9,13 @@
     "dev": "node server.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.27.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "fossflow": "^1.7.0",
     "multer": "^2.0.2",
-    "puppeteer": "^24.34.0",
+    "puppeteer": "^24.37.5",
     "uuid": "^9.0.1",
     "zod": "^3.25.76"
   },

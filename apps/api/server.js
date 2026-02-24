@@ -9,7 +9,6 @@ import puppeteer from 'puppeteer';
 import multer from 'multer';
 import { validateDiagram } from './validator.js';
 import crypto from 'crypto';
-import { mcpServer } from '../mcp/dist/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,47 +62,53 @@ app.use('/api', (req, res, next) => {
 // ----------------------------------------------------------------------------------
 // MCP SERVER ROUTE
 // ----------------------------------------------------------------------------------
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { createMcpServer } from '../mcp/dist/index.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { createMcpServer } from './mcp.js'; // LOADED LOCALLY INSTEAD OF dist/
 
-// Map to cleanly isolate AI agents calling MCP concurrently
-const mcpSessions = new Map();
+let mcpTransport = null;
+let mcpServerInstance = null;
 
-app.get('/mcp', async (req, res) => {
-  const sessionId = crypto.randomUUID();
-  console.log(`[MCP] New client initialized SSE stream via GET /mcp (Session: ${sessionId})`);
+app.all('/mcp', async (req, res) => {
+  // Prevent proxies from hanging SSE payload
+  req.setTimeout(0);
+  res.socket?.setTimeout(0);
 
-  // Instanciate our specific POST endpoint URL explicitly with the session ID
-  const transport = new SSEServerTransport(`/mcp/messages?sessionId=${sessionId}`, res);
+  if (req.method === 'GET' || (req.headers.accept && req.headers.accept.includes('text/event-stream'))) {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+  }
 
-  // Create a brand NEW independent McpServer for this client
-  const localMcpServer = createMcpServer();
+  // Auto-Restart logic when Python MCP Client reconnects
+  const bodyString = req.body ? JSON.stringify(req.body) : '';
+  const isInitializeRequest = req.method === 'POST' && bodyString.includes('"initialize"');
 
-  await localMcpServer.connect(transport).catch(err => {
-    console.error(`[MCP] Failed to connect transport for session ${sessionId}:`, err);
-  });
+  if (isInitializeRequest || !mcpTransport) {
+    if (mcpTransport) {
+      try { await mcpTransport.close(); } catch (e) { /* ignore */ }
+    }
 
-  mcpSessions.set(sessionId, { transport, server: localMcpServer });
+    // Create new stream context
+    mcpTransport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID()
+    });
 
-  req.on('close', () => {
-    console.log(`[MCP] Connection closed by client (Session: ${sessionId})`);
-    mcpSessions.delete(sessionId);
-    transport.close().catch(() => { });
-  });
-});
+    // Create newly isolated tools container
+    mcpServerInstance = createMcpServer();
+    await mcpServerInstance.connect(mcpTransport).catch(e => console.error(e));
+  }
 
-app.post('/mcp/messages', async (req, res) => {
-  const sessionId = req.query.sessionId;
-  const session = mcpSessions.get(sessionId);
-
-  if (!session) {
-    return res.status(400).json({ error: 'No active MCP SSE session. Make a GET to /mcp first to initialize a stream.' });
+  if (!mcpTransport) {
+    return res.status(500).send("MCP Transport is offline");
   }
 
   try {
-    await session.transport.handlePostMessage(req, res, req.body);
+    await mcpTransport.handleRequest(req, res, req.body);
   } catch (err) {
-    console.error(`[MCP] Failed to handle message for session ${sessionId}:`, err);
+    console.error('[MCP] Transport Request Error:', err);
+    if (!res.headersSent) {
+      res.status(500).send('MCP Transport JSON-RPC Error');
+    }
   }
 });
 // ----------------------------------------------------------------------------------
