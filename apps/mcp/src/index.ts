@@ -336,41 +336,6 @@ server.registerTool(
 );
 
 server.registerTool(
-    "import_diagram",
-    {
-        description: "Import a JSON diagram data into the system as a newly saved diagram",
-        inputSchema: {
-            name: z.string().optional().describe("Optional name of the imported diagram"),
-            data: z.record(z.any()).describe("The diagram JSON data to import")
-        }
-    },
-    async ({ name, data }) => {
-        try {
-            const validation = validateDiagram(data);
-            if (!validation.success) {
-                return { content: [{ type: "text", text: `Model validation failed during import: ${validation.errors?.join(', ')}` }], isError: true };
-            }
-
-            const id = `import_${Date.now()}`;
-            const filePath = path.join(STORAGE_PATH, `${id}.json`);
-
-            const finalData = {
-                ...data,
-                id,
-                name: name || data.name || 'Imported Diagram',
-                lastModified: new Date().toISOString(),
-                created: data.created || new Date().toISOString()
-            };
-
-            await fs.writeFile(filePath, JSON.stringify(finalData, null, 2));
-            return { content: [{ type: "text", text: `Diagram imported and saved successfully. ID: ${id}` }, { type: "text", text: `You can access and edit the diagram here: ${getWebAppUrl()}/edit/${id}` }] };
-        } catch (error: any) {
-            return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
-        }
-    }
-);
-
-server.registerTool(
     "upload_icon",
     {
         description: "Upload a new base64 image icon to the server, and returns the URL. Provide only the pure base64 string.",
