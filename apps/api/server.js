@@ -68,28 +68,28 @@ app.use('/api', (req, res, next) => {
 // we must establish a new Transport instance per SSE requested session, 
 // rather than globally.
 
-let transport;
-app.get('/mcp', async (req, res) => {
-  transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
-  });
-  await mcpServer.connect(transport);
-  await transport.handleRequest(req, res, req.body);
+// ----------------------------------------------------------------------------------
+// MCP SERVER ROUTE
+// ----------------------------------------------------------------------------------
+// Create a SINGLE global transport. StreamableHTTPServerTransport manages 
+// multiple client sessions internally based on the UUID generator.
+const mcpTransport = new StreamableHTTPServerTransport({
+  sessionIdGenerator: () => crypto.randomUUID(),
 });
 
-app.post('/mcp', async (req, res) => {
-  if (!transport) {
-    res.status(400).send('MCP Transport not connected (Run GET /mcp first)');
-    return;
-  }
-  await transport.handleRequest(req, res, req.body);
+// Connect it to the MCP server exactly ONCE.
+mcpServer.connect(mcpTransport).then(() => {
+  console.log('[BOOT] MCP Streamable Transport connected successfully.');
+}).catch(err => {
+  console.error('[BOOT] Failed to connect MCP transport:', err);
 });
 
-app.all('/mcp/*', async (req, res) => {
-  if (transport) {
-    await transport.handleRequest(req, res, req.body);
-  } else {
-    res.status(400).send('MCP Transport not connected');
+// Let the transport handle ALL GET (SSE) and POST (Messages) arriving at /mcp...
+app.use('/mcp', async (req, res) => {
+  try {
+    await mcpTransport.handleRequest(req, res, req.body);
+  } catch (err) {
+    console.error('[MCP] Request Error:', err);
   }
 });
 // ----------------------------------------------------------------------------------
