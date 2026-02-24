@@ -77,6 +77,12 @@ app.get('/mcp', async (req, res) => {
     const transport = new SSEServerTransport(messageEndpoint, res);
     const serverInstance = createMcpServer();
 
+    mcpSessions.set(sessionId, transport);
+
+    // D'abord on démarre le flux HTTP pour envoyer les headers SSE
+    await transport.start();
+
+    // Ensuite on connecte logiquement le serveur au flux
     await serverInstance.connect(transport);
 
     res.on('close', () => {
@@ -85,8 +91,6 @@ app.get('/mcp', async (req, res) => {
       try { serverInstance.close(); } catch (e) { }
     });
 
-    mcpSessions.set(sessionId, transport);
-    await transport.start();
   } catch (err) {
     console.error('[MCP] GET Error:', err);
   }
