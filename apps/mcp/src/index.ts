@@ -150,14 +150,16 @@ server.registerTool(
                 const element = await page.$('[data-is-ready="true"]');
                 if (!element) throw new Error("Diagram container not found");
 
-                const imageBuffer = await element.screenshot({ type: "png", omitBackground: true });
+                // Return the image as base64 natively from puppeteer
+                const base64Data = await element.screenshot({ type: "png", omitBackground: true, encoding: "base64" }) as string;
                 await browser.close();
-
-                // Return the image as base64 so the MCP client can save it locally on its side
-                const base64Data = Buffer.from(imageBuffer).toString('base64');
 
                 return {
                     content: [
+                        {
+                            type: "text",
+                            text: "Diagram exported successfully. The image is provided below."
+                        },
                         {
                             type: "image",
                             data: base64Data,
