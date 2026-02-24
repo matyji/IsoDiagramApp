@@ -8,6 +8,9 @@ import dotenv from 'dotenv';
 import puppeteer from 'puppeteer';
 import multer from 'multer';
 import { validateDiagram } from './validator.js';
+import crypto from 'crypto';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { mcpServer } from '../mcp/dist/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,6 +60,28 @@ app.use('/api', (req, res, next) => {
   res.set('Expires', '0');
   next();
 });
+
+// ----------------------------------------------------------------------------------
+// MCP SERVER ROUTE
+// ----------------------------------------------------------------------------------
+let mcpTransport;
+app.all('/mcp', async (req, res) => {
+  if (!mcpTransport) {
+    console.log('[BOOT] Initializing MCP Streamable Transport on /mcp');
+    mcpTransport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID()
+    });
+    // Link MCP Transport to the server
+    await mcpServer.connect(mcpTransport);
+  }
+  await mcpTransport.handleRequest(req, res, req.body);
+});
+app.all('/mcp/*', async (req, res) => {
+  if (mcpTransport) {
+    await mcpTransport.handleRequest(req, res, req.body);
+  }
+});
+// ----------------------------------------------------------------------------------
 
 // Health check / Storage status endpoint
 app.get('/api/storage/status', (req, res) => {

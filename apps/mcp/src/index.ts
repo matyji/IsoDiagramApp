@@ -7,6 +7,8 @@ import { fileURLToPath } from "url";
 import { z } from "zod";
 import puppeteer from "puppeteer";
 import dotenv from "dotenv";
+// @ts-ignore - validator.js is a plain JS file without types in the api app
+import { validateDiagram } from "../../api/validator.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +19,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../api/.env") });
 const BASE_ASSETS_PATH = path.resolve(__dirname, "../../api/data/assets/base");
 const IMPORTED_ASSETS_PATH = path.resolve(__dirname, "../../api/data/assets/imported");
 const STORAGE_PATH = process.env.STORAGE_PATH || path.resolve(__dirname, "../../api/data/diagrams");
-const WEB_APP_URL = process.env.WEB_APP_URL || "http://localhost:3000";
+const getWebAppUrl = () => process.env.WEB_APP_URL || "http://localhost:3000";
 
 const server = new McpServer({
     name: "isodiagram-mcp",
@@ -95,7 +97,7 @@ server.registerTool(
         inputSchema: z.object({ id: z.string().describe("The ID of the diagram to open") })
     },
     async ({ id }) => {
-        const url = `${WEB_APP_URL}/edit/${id}`;
+        const url = `${getWebAppUrl()}/edit/${id}`;
         return {
             content: [{ type: "text", text: `You can access and edit the diagram here: ${url}` }],
         };
@@ -109,7 +111,7 @@ server.registerTool(
         inputSchema: z.object({ id: z.string().describe("The ID of the diagram to display") })
     },
     async ({ id }) => {
-        const url = `${WEB_APP_URL}/display/${id}`;
+        const url = `${getWebAppUrl()}/display/${id}`;
         return {
             content: [{ type: "text", text: `You can view the diagram in readonly mode here: ${url}` }],
         };
@@ -130,8 +132,7 @@ server.registerTool(
         try {
             const filePath = path.join(STORAGE_PATH, `${id}.json`);
             await fs.access(filePath);
-
-            const exportUrl = `${WEB_APP_URL}/display/${id}?export=true`;
+            const exportUrl = `${getWebAppUrl()}/display/${id}?export=true`;
 
             // Launch headless browser to capture screen
             const browser = await puppeteer.launch({
@@ -253,6 +254,11 @@ server.registerTool(
     },
     async ({ data, id }) => {
         try {
+            const validation = validateDiagram(data);
+            if (!validation.success) {
+                return { content: [{ type: "text", text: `Model validation failed: ${validation.errors?.join(', ')}` }], isError: true };
+            }
+
             const diagramId = id || `diagram_${Date.now()}`;
             const filePath = path.join(STORAGE_PATH, `${diagramId}.json`);
 
@@ -268,7 +274,7 @@ server.registerTool(
             };
 
             await fs.writeFile(filePath, JSON.stringify(finalData, null, 2));
-            return { content: [{ type: "text", text: `Diagram created successfully. ID: ${diagramId}` }] };
+            return { content: [{ type: "text", text: `Diagram created successfully. ID: ${diagramId}` }, { type: "text", text: `You can access and edit the diagram here: ${getWebAppUrl()}/edit/${id}` }] };
         } catch (error: any) {
             return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
         }
@@ -286,6 +292,11 @@ server.registerTool(
     },
     async ({ id, data }) => {
         try {
+            const validation = validateDiagram(data);
+            if (!validation.success) {
+                return { content: [{ type: "text", text: `Model validation failed: ${validation.errors?.join(', ')}` }], isError: true };
+            }
+
             const filePath = path.join(STORAGE_PATH, `${id}.json`);
 
             const finalData = {
@@ -295,7 +306,7 @@ server.registerTool(
             };
 
             await fs.writeFile(filePath, JSON.stringify(finalData, null, 2));
-            return { content: [{ type: "text", text: `Diagram ${id} successfully updated.` }] };
+            return { content: [{ type: "text", text: `Diagram ${id} successfully updated.` }, { type: "text", text: `You can access and edit the diagram here: ${getWebAppUrl()}/edit/${id}` }] };
         } catch (error: any) {
             return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
         }
@@ -335,6 +346,11 @@ server.registerTool(
     },
     async ({ name, data }) => {
         try {
+            const validation = validateDiagram(data);
+            if (!validation.success) {
+                return { content: [{ type: "text", text: `Model validation failed during import: ${validation.errors?.join(', ')}` }], isError: true };
+            }
+
             const id = `import_${Date.now()}`;
             const filePath = path.join(STORAGE_PATH, `${id}.json`);
 
@@ -347,7 +363,7 @@ server.registerTool(
             };
 
             await fs.writeFile(filePath, JSON.stringify(finalData, null, 2));
-            return { content: [{ type: "text", text: `Diagram imported and saved successfully. ID: ${id}` }] };
+            return { content: [{ type: "text", text: `Diagram imported and saved successfully. ID: ${id}` }, { type: "text", text: `You can access and edit the diagram here: ${getWebAppUrl()}/edit/${id}` }] };
         } catch (error: any) {
             return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
         }
@@ -404,10 +420,4 @@ server.registerTool(
     }
 );
 
-async function main() {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    console.error("IsoDiagram MCP server running on stdio");
-}
-
-main().catch(console.error);
+export const mcpServer = server;
