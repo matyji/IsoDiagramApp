@@ -64,22 +64,21 @@ app.use('/api', (req, res, next) => {
 // ----------------------------------------------------------------------------------
 // MCP SERVER ROUTE
 // ----------------------------------------------------------------------------------
-let mcpTransport;
+const mcpTransport = new StreamableHTTPServerTransport({
+  sessionIdGenerator: () => crypto.randomUUID()
+});
+// Link MCP Transport to the server once at startup
+mcpServer.connect(mcpTransport).then(() => {
+  console.log('[BOOT] MCP Streamable Transport initialized on /mcp');
+}).catch(err => {
+  console.error('[BOOT] Failed to initialize MCP Transport', err);
+});
+
 app.all('/mcp', async (req, res) => {
-  if (!mcpTransport) {
-    console.log('[BOOT] Initializing MCP Streamable Transport on /mcp');
-    mcpTransport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => crypto.randomUUID()
-    });
-    // Link MCP Transport to the server
-    await mcpServer.connect(mcpTransport);
-  }
   await mcpTransport.handleRequest(req, res, req.body);
 });
 app.all('/mcp/*', async (req, res) => {
-  if (mcpTransport) {
-    await mcpTransport.handleRequest(req, res, req.body);
-  }
+  await mcpTransport.handleRequest(req, res, req.body);
 });
 // ----------------------------------------------------------------------------------
 
