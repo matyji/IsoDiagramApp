@@ -9,8 +9,8 @@ import puppeteer from 'puppeteer';
 import multer from 'multer';
 import { validateDiagram } from './validator.js';
 import crypto from 'crypto';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { mcpServer } from '../mcp/dist/index.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { createMcpServer } from '../mcp/dist/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,38 +66,43 @@ app.use('/api', (req, res, next) => {
 // ----------------------------------------------------------------------------------
 const mcpSessions = new Map();
 
+// 1. Initialisation SSE (L'agent s'abonne et reçoit l'URL où il doit poster via un event)
 app.get('/mcp', async (req, res) => {
   try {
     const sessionId = crypto.randomUUID();
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => sessionId,
-    });
+    // On indique au client qu'il devra envoyer les réponses du LLM sur cette URL unique
+    const messageEndpoint = `/mcp/messages?sessionId=${sessionId}`;
 
+    // Le transport attache nativement l'objet response Express au flux SSE
+    const transport = new SSEServerTransport(messageEndpoint, res);
     const serverInstance = createMcpServer();
+
     await serverInstance.connect(transport);
 
     res.on('close', () => {
+      // Nettoyage garanti quand le client (Agno) fait ctrl-c ou coupe
       mcpSessions.delete(sessionId);
       try { serverInstance.close(); } catch (e) { }
     });
 
     mcpSessions.set(sessionId, transport);
-    await transport.handleRequest(req, res);
+    await transport.start();
   } catch (err) {
     console.error('[MCP] GET Error:', err);
   }
 });
 
-app.post('/mcp', async (req, res) => {
+// 2. Réception des commandes de l'agent
+app.post('/mcp/messages', async (req, res) => {
   try {
     const sessionId = req.query.sessionId;
     const transport = mcpSessions.get(sessionId);
 
     if (!transport) {
-      return res.status(404).json({ error: 'Session not found or expired. Run GET /mcp first.' });
+      return res.status(404).json({ error: 'Session MCP non trouvée ou expirée.' });
     }
 
-    await transport.handleRequest(req, res, req.body);
+    await transport.handlePostMessage(req, res, req.body);
   } catch (err) {
     console.error('[MCP] POST Error:', err);
   }
